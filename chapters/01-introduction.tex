@@ -1,0 +1,716 @@
+% =====================================================================
+\phantomsection
+\addcontentsline{toc}{part}{Foundations}
+\BookChapter[What Is a Programming Language?]{What Is a Programming Language?}
+\label{ch:intro}
+
+\begin{researchquestion}
+What is a programming language, and why do engineers need so many different ones?
+\end{researchquestion}
+% =====================================================================
+
+A computer is a machine that follows instructions very fast and very exactly. It does
+not guess what you meant. A \term{programming language} is an artificial language,
+with strict rules of spelling and grammar, that lets a person write those instructions
+down in a form that can be turned into something the machine can execute. The written
+instructions are called a \term{program}, or \term{source code}.
+
+This chapter introduces the vocabulary we need to talk about languages: algorithms,
+levels of abstraction, programming paradigms, type systems, and the main language
+families. It ends with a short history and a table of which languages are used in which
+branch of engineering.
+
+\LearningOutcomes{Describe an algorithm separately from the language it is written in; place a language on the scale from machine code to domain-specific tools; recognise the main programming paradigms in a short piece of code; explain the difference between static and dynamic typing and between compiling and interpreting; and read a popularity ranking with the right amount of caution.}
+
+\section{Algorithms come first}
+
+Before there is a program there is an \term{algorithm}: a finite list of precise steps
+that solves a problem. The idea is much older than computers. The Euclidean algorithm for
+the greatest common divisor of two integers is more than 2000 years old:
+
+\begin{enumerate}
+\item Take two positive integers $a$ and $b$.
+\item If $b = 0$, the answer is $a$. Stop.
+\item Otherwise replace $(a, b)$ by $(b, a \bmod b)$, where $a\bmod b$ is the remainder
+  of $a/b$, and go back to step 2.
+\end{enumerate}
+
+For $a = 1071$, $b = 462$ the steps give $(1071, 462) \to (462, 147) \to (147, 21)
+\to (21, 0)$, so the answer is $21$. The algorithm is the same in every language. Here
+it is in \py,
+\begin{lstlisting}[language=Python]
+def gcd(a, b):
+    while b != 0:
+        a, b = b, a % b
+    return a
+\end{lstlisting}
+and here it is in C:
+\begin{lstlisting}[language=C]
+int gcd(int a, int b) {
+    while (b != 0) {
+        int r = a % b;
+        a = b;
+        b = r;
+    }
+    return a;
+}
+\end{lstlisting}
+The two programs look different: C wants to know that \code{a} and \code{b} are
+integers (\code{int}), it uses braces \code{\{ \}} to mark blocks and semicolons to end
+statements, and it needs a temporary variable \code{r} for the swap. \py marks blocks
+by indentation and can swap two values in one line. But the \emph{algorithm} is
+identical. Keep this in mind when you read the rest of these notes: most of what
+differs between languages is \emph{notation}; the ideas are shared.
+
+\begin{keyidea}
+Think about the algorithm first, and the language second. If you can describe the steps
+of a solution clearly in words or with a flowchart, writing them in any language is a
+matter of looking up the notation.
+\end{keyidea}
+
+\section{From problem to program: pseudocode and flowcharts}
+
+Experienced programmers rarely start by typing code. They first describe the algorithm in
+a form that is independent of any language. Two tools are common.
+
+\paragraph{Pseudocode} is a precise, structured description in plain language, using the
+building blocks that every language has (variables, decisions, loops). Here is Newton's
+method for solving $f(x) = 0$, which we will meet in every language chapter:
+\begin{lstlisting}[language={},basicstyle=\ttfamily\small,keywordstyle={},
+  morekeywords={INPUT,OUTPUT,SET,FOR,TO,IF,THEN,RETURN,END,STOP,REPORT}]
+INPUT  function f, derivative df, starting guess x0, tolerance tol, max_iter
+SET x = x0
+FOR k = 1 TO max_iter
+    SET step = f(x) / df(x)
+    SET x = x - step
+    IF |step| < tol THEN
+        RETURN x and k
+    END IF
+END FOR
+REPORT "no convergence" and STOP
+\end{lstlisting}
+
+\paragraph{Flowcharts} show the same logic as a diagram (Figure~\ref{fig:flowchart}).
+Ovals mark the start and end, rectangles are actions, diamonds are decisions, and arrows
+show the order. Flowcharts are particularly helpful for logic with many branches, such as
+the control sequence of a machine, and they are the ancestors of the graphical languages
+described in Chapter~\ref{ch:others}.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=6mm and 10mm,
+  every node/.style={font=\sffamily\small},
+  term/.style={draw=nublue,fill=nublue!8,rounded corners=8pt,minimum width=26mm,minimum height=7mm},
+  act/.style={draw=nublue,fill=white,minimum width=34mm,minimum height=7mm,align=center},
+  dec/.style={draw=nugold!85!black,fill=nugold!10,diamond,aspect=2.4,inner sep=1pt,align=center},
+  arr/.style={-{Stealth[length=2.2mm]},thick}]
+\node[term] (start) {start};
+\node[act,below=of start] (init) {read $f$, $f'$, $x_0$\\set $x = x_0$, $k = 0$};
+\node[act,below=of init] (step) {$k = k + 1$\\$s = f(x)/f'(x)$, \ $x = x - s$};
+\node[dec,below=of step] (conv) {$|s| < \mathrm{tol}$?};
+\node[term,right=18mm of conv] (done) {output $x$, $k$};
+\node[dec,below=of conv] (maxit) {$k \ge k_\mathrm{max}$?};
+\node[term,right=18mm of maxit] (fail) {report failure};
+\draw[arr] (start) -- (init);
+\draw[arr] (init) -- (step);
+\draw[arr] (step) -- (conv);
+\draw[arr] (conv) -- node[above]{yes} (done);
+\draw[arr] (conv) -- node[right]{no} (maxit);
+\draw[arr] (maxit) -- node[above]{yes} (fail);
+\draw[arr] (maxit.west) -- node[above]{no} ++(-14mm,0) |- (step.west);
+\end{tikzpicture}
+\caption{Flowchart of Newton's method with a stopping tolerance and a maximum number of
+iterations.}
+\label{fig:flowchart}
+\end{figure}
+
+Whichever tool you use, a good algorithm description answers four questions before any code
+is written: What are the inputs, and in which units? What are the outputs? What steps
+transform one into the other? And how will I check that the answer is right? The last
+question is the one beginners most often forget.
+
+\section{From switches to Python: levels of abstraction}
+
+A processor (CPU) understands only \term{machine code}: sequences of binary numbers,
+each of which encodes a very simple operation such as ``add the numbers in two
+registers'' or ``jump to address 4096 if the last result was zero''. Writing programs
+directly in machine code is possible but extremely tedious and error-prone. Over the
+decades, programmers built layers of languages on top of machine code, each layer
+hiding more detail.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  layer/.style={draw=nublue,fill=nublue!#1,minimum width=10.5cm,minimum height=0.85cm,
+    font=\sffamily\small,align=center,rounded corners=2pt},
+  node distance=1.5mm]
+\node[layer=5]  (l5) {\textbf{Domain-specific languages}: SQL, MATLAB/Simulink, Modelica, spreadsheet formulas};
+\node[layer=10, below=of l5] (l4) {\textbf{High-level, interpreted / JIT}: \py, R, JavaScript, Julia, Wolfram};
+\node[layer=18, below=of l4] (l3) {\textbf{High-level, compiled}: Fortran, C++, Java, C\#, Rust, Go};
+\node[layer=28, below=of l3] (l2) {\textbf{``Portable assembly''}: C};
+\node[layer=40, below=of l2] (l1) {\textbf{Assembly language}: \texttt{mov}, \texttt{add}, \texttt{jmp} \ldots};
+\node[layer=55, below=of l1,text=white] (l0) {\textbf{Machine code}: \texttt{10110000 01100001} \ldots};
+\draw[-{Stealth[length=3mm]},thick,nugold] ([xshift=6mm]l0.east) -- node[right,font=\sffamily\small,align=left]{more\\abstract,\\closer to\\the problem} ([xshift=6mm]l5.east);
+\draw[-{Stealth[length=3mm]},thick,nugold] ([xshift=-6mm]l5.west) -- node[left,font=\sffamily\small,align=right]{more\\control,\\closer to\\the hardware} ([xshift=-6mm]l0.west);
+\end{tikzpicture}}
+\caption{Levels of programming languages. Higher levels let you express the problem
+more directly; lower levels give you more control over what the hardware does.}
+\label{fig:levels}
+\end{figure}
+
+\subsection*{The processor understands only machine code}
+
+To see what ``low level'' means, consider adding two numbers. In \py you write
+\code{c = a + b}. In x86-64 assembly language the same thing could look like this:
+\begin{lstlisting}[language={[x86masm]Assembler}]
+    mov  eax, DWORD PTR [rbp-4]    ; load a from memory into register eax
+    add  eax, DWORD PTR [rbp-8]    ; add b to it
+    mov  DWORD PTR [rbp-12], eax   ; store the result in c
+\end{lstlisting}
+Each line is one instruction for the processor. An \term{assembler} translates each
+instruction into its binary machine code. Assembly is specific to one processor family:
+code for an Intel laptop does not run on the ARM processor in your phone. Today
+assembly is used only where every clock cycle or every byte counts, for example in the
+start-up code of a microcontroller or in the innermost loops of a numerical library.
+
+\subsection*{A high-level language hides the machine}
+
+A \term{high-level language} lets you write \code{c = a + b} and leaves the details
+(which registers to use, where in memory to put \code{c}) to a translator program. The
+first widely used high-level language was \textbf{Fortran} (1957), designed at IBM for
+scientists and engineers who wanted to write formulas, not machine instructions. Its name
+is short for \emph{FORmula TRANslation}. Chapter~\ref{ch:fortran} tells its story.
+
+High-level languages bring three big advantages:
+\begin{itemize}
+\item \textbf{Productivity}: one line of high-level code can replace dozens of machine
+  instructions.
+\item \textbf{Portability}: the same source code can be translated for different
+  processors.
+\item \textbf{Readability}: other people (and you, six months later) can understand the
+  program.
+\end{itemize}
+The price is that you give up some control. The translator decides how to use the
+hardware, and it may not make the choice you would have made. For most engineering work
+this is a very good trade.
+
+\section{Programming paradigms}
+
+A \term{paradigm} is a style of organising a program. Most modern languages support
+several paradigms, but each language has a ``natural'' style. Knowing the paradigms helps
+you understand why languages look the way they do.
+
+\subsection*{Imperative programs change state step by step}
+
+In the \term{imperative} style a program is a sequence of commands that change the
+\emph{state} of the computer (the values stored in variables). ``Set \code{x} to 0. Add 1
+to \code{x}. If \code{x} is less than 10, repeat.'' \term[procedural programming]{Procedural} programming
+organises those commands into named \emph{procedures} (also called functions or
+subroutines) that can be called again and again. Fortran, C, and the scripts you write in
+the first weeks of ENG 101 are procedural.
+\begin{lstlisting}[language=Python]
+# Procedural style: a function that changes nothing outside itself
+def mean(values):
+    total = 0.0
+    for v in values:
+        total = total + v
+    return total / len(values)
+\end{lstlisting}
+
+\subsection*{Objects bundle data with the functions that use them}
+
+In \term{object-oriented programming} (OOP) data and the functions that work on that data
+are bundled together into \term{objects}. A \term{class} is a blueprint for objects. For
+example, a class \code{Pipe} could store a length, a diameter and a roughness, and offer
+a method \code{pressure\_drop(flow\_rate)}. Each actual pipe in a network is an object (an
+\term{instance}) of that class. C++, Java and C\# are built around OOP; \py supports it
+fully.
+\begin{lstlisting}[language=Python]
+class Pipe:
+    def __init__(self, length, diameter):
+        self.length = length        # m
+        self.diameter = diameter    # m
+
+    def area(self):
+        return 3.141592653589793 * self.diameter**2 / 4
+
+p = Pipe(length=12.0, diameter=0.05)
+print(p.area())                     # 0.0019634954084936207
+\end{lstlisting}
+Three ideas usually come with OOP:
+\begin{itemize}
+\item \term{encapsulation}: the inside of an object is hidden; you use it through its
+  methods;
+\item \term{inheritance}: a new class can extend an existing one (a \code{HeatedPipe} is
+  a \code{Pipe} with a wall temperature);
+\item \term{polymorphism}: different classes can offer methods with the same name, and
+  code that calls \code{area()} works for any of them.
+\end{itemize}
+
+\subsection*{Functional programs combine functions without side effects}
+
+In \term{functional programming} the main building block is the mathematical function:
+a rule that maps inputs to outputs and has no side effects. Instead of changing variables
+in a loop, you combine functions. Languages such as Haskell, Lisp, OCaml and F\# are
+designed for this style; the Wolfram Language and R are strongly influenced by it; and
+\py, JavaScript and modern C++ borrow many of its ideas.
+\begin{lstlisting}[language=Python]
+# Functional style: no variable is changed after it is created
+values = [3.1, 2.9, 3.0, 3.2]
+squares = list(map(lambda v: v**2, values))
+mean = sum(values) / len(values)
+\end{lstlisting}
+Functional code is often shorter and easier to test, because a function with no side
+effects always returns the same output for the same input.
+
+\subsection*{Declarative programs state what is wanted, not how}
+
+In \term{declarative} languages you describe \emph{what} you want, not \emph{how} to get
+it. The classic example is SQL, the language of databases:
+\begin{lstlisting}[language=SQL]
+SELECT sample_id, AVG(yield_strength)
+FROM tensile_tests
+WHERE material = 'Al6061'
+GROUP BY sample_id;
+\end{lstlisting}
+You do not write a loop over the rows; the database decides how to find and average
+them. Spreadsheet formulas, regular expressions, HTML and the equation-based modelling
+language Modelica (Section~\ref{sec:modelica}) are also declarative.
+
+\subsection*{Array programs operate on whole vectors and matrices}
+
+Engineers and scientists work with vectors and matrices. \term[array programming]{Array programming} lets
+you apply an operation to a whole array at once, without writing a loop. If \code{T} is an
+array of 1000 temperatures in Celsius, then in MATLAB, \py with NumPy, R, Julia or modern
+Fortran you can write
+\begin{lstlisting}[language=Python]
+T_kelvin = T + 273.15
+\end{lstlisting}
+and all 1000 values are converted. This style was pioneered by the language APL in the
+1960s and became mainstream through MATLAB. It is the natural style for numerical work,
+and it is usually much faster than an explicit loop in an interpreted language
+(Section~\ref{sec:numpy-speed}).
+
+\begin{keyidea}
+Paradigms are tools, not religions. A good engineering program often mixes them: an
+object to represent a reactor, array operations to compute its temperature profile, a
+pure function for the reaction rate, and a short imperative loop for time stepping.
+\end{keyidea}
+
+\section{Types and type systems}
+
+Every value in a program has a \term{type}: an integer, a floating-point number, a
+string of characters, a list, a matrix, a date. The type tells the language how the value
+is stored and which operations make sense. You can multiply two numbers, but not two
+dates. Languages differ a lot in how they handle types, and these differences explain
+much of what you see when you look at code in different languages.
+
+\subsection*{Types can be fixed before the run or carried by the values}
+
+In a \term{statically typed} language the type of every variable is known before the
+program runs, usually because you declare it:
+\begin{lstlisting}[language=C]
+double pressure = 101325.0;   /* C: pressure can only ever hold a double */
+int    n_steps  = 40;
+\end{lstlisting}
+If you later try to store a string in \code{pressure}, the compiler refuses to build the
+program. C, C++, C\#, Java, Fortran, Rust and Go are statically typed.
+
+In a \term{dynamically typed} language a variable is just a name attached to a value, and
+the value carries its type with it:
+\begin{lstlisting}[language=Python]
+pressure = 101325.0     # pressure refers to a float
+pressure = "1 atm"      # now it refers to a string; Python does not complain
+\end{lstlisting}
+\py, JavaScript, MATLAB, R and the Wolfram Language are dynamically typed. Julia is
+dynamically typed but lets you add type annotations, and uses type information to compile
+fast code.
+
+Static typing catches many mistakes early and lets the compiler produce fast code.
+Dynamic typing makes code shorter and quicker to write and experiment with. Many modern
+languages try to have both: \py allows optional \term{type hints},
+\begin{lstlisting}[language=Python]
+def terminal_velocity(m: float, c: float, g: float = 9.81) -> float:
+    return (m * g / c) ** 0.5
+\end{lstlisting}
+and TypeScript adds static types to JavaScript (Section~\ref{sec:typescript}).
+
+\subsection*{Some languages convert types silently}
+
+A separate question is how strictly a language enforces types when you mix them. In
+\py, \code{"3" + 4} is an error: you cannot add a string and an integer. In JavaScript,
+\code{"3" + 4} quietly produces the string \code{"34"}, and \code{"3" * 4} produces the
+number \code{12}. We say \py is \term{strongly typed} and JavaScript is more
+\term{weakly typed}. Weak typing is convenient for web pages but can hide errors in
+calculations. C is statically typed but fairly weak: it will silently convert a
+\code{double} to an \code{int} and throw away the fractional part.
+
+\begin{pitfall}[Common pitfall: silent conversions]
+In C, Java, C\# and older Fortran, dividing two integers gives an integer:
+\code{7 / 2} is \code{3}, not \code{3.5}. In \py~3, \code{7 / 2} is \code{3.5}
+and \code{7 // 2} is \code{3}. In MATLAB, numbers are floating point by default, so
+\code{7/2} is \code{3.5}. When you translate a formula from one language to another,
+check every division.
+\end{pitfall}
+
+\section{Compiled and interpreted languages}
+
+The source code you write has to be translated into machine code before the processor can
+run it. There are two main strategies, and Chapter~\ref{ch:howcoderuns} explains them
+in detail.
+\begin{itemize}
+\item A \term{compiler} translates the whole program into machine code \emph{before} it
+  runs, and saves the result as an executable file. You run the executable. Fortran, C,
+  C++, Rust and Go are usually compiled.
+\item An \term{interpreter} reads the program and carries out its instructions
+  \emph{while} it runs. \py (in its standard implementation), R and MATLAB are usually
+  interpreted.
+\end{itemize}
+Between these two extremes are languages that compile to an intermediate
+\term{bytecode} that runs on a \term{virtual machine} (Java, C\#), and languages that
+compile pieces of the program to machine code just before they are needed, called
+\term{just-in-time (JIT) compilation} (Julia, JavaScript in a web browser, MATLAB's
+modern engine). Strictly speaking, ``compiled'' and ``interpreted'' describe
+\emph{implementations}, not languages: there are \py compilers and C interpreters. But
+each language has a usual way of being run, and that usual way shapes how it feels to
+use it.
+
+\section{A short history of programming languages}
+
+Figure~\ref{fig:timeline} shows when the languages in these notes first appeared. A few
+milestones are worth knowing.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.152cm,y=0.5cm,
+  lang/.style={font=\sffamily\scriptsize,anchor=west,inner sep=1pt},
+  dot/.style={circle,fill=nublue,inner sep=1.4pt}]
+\draw[thick,gray] (1950,0) -- (2025,0);
+\foreach \y in {1950,1960,...,2020} {
+  \draw[gray] (\y,0.15) -- (\y,-0.15) node[below,font=\sffamily\scriptsize]{\y};
+}
+% name, year, row
+\foreach \name/\yr/\row in {
+   Fortran/1957/1, LISP/1958/2, COBOL/1959/3, BASIC/1964/4, APL/1966/5,
+   Simula/1967/6, C/1972/1, Prolog/1972/2, SQL/1974/3, S (\textrightarrow\ R)/1976/4,
+   MATLAB/1984/5, C++/1985/6, Perl/1987/7, Mathematica/1988/8,
+   Python/1991/1, Visual Basic/1991/2, R/1993/3, Java/1995/4, JavaScript/1995/5,
+   PHP/1995/6, C\#/2000/7, Scala/2004/8, Go/2009/1, Rust/2010/2, Julia/2012/3,
+   TypeScript/2012/4, Swift/2014/5, Mojo/2023/6} {
+  \draw[gray!45] (\yr,0) -- (\yr,\row);
+}
+\foreach \name/\yr/\row in {
+   Fortran/1957/1, LISP/1958/2, COBOL/1959/3, BASIC/1964/4, APL/1966/5,
+   Simula/1967/6, C/1972/1, Prolog/1972/2, SQL/1974/3, S (\textrightarrow\ R)/1976/4,
+   MATLAB/1984/5, C++/1985/6, Perl/1987/7, Mathematica/1988/8,
+   Python/1991/1, Visual Basic/1991/2, R/1993/3, Java/1995/4, JavaScript/1995/5,
+   PHP/1995/6, C\#/2000/7, Scala/2004/8, Go/2009/1, Rust/2010/2, Julia/2012/3,
+   TypeScript/2012/4, Swift/2014/5, Mojo/2023/6} {
+  \node[dot] at (\yr,\row) {};
+  \node[lang,fill=white] at (\yr+0.6,\row) {\name};
+}
+\end{tikzpicture}
+\caption{Year of first appearance of selected programming languages. Dates are the
+first public release or first published description.}
+\label{fig:timeline}
+\end{figure}
+
+\begin{description}
+\item[1940s] The first electronic computers (ENIAC, Colossus, the Manchester Baby) were
+  programmed by setting switches and plugging cables, and then in machine code.
+\item[1950s] Grace Hopper built the first compilers and argued that programs should be
+  written in something close to English. John Backus's team at IBM released
+  \textbf{Fortran} in 1957 and showed that compiled code could be almost as fast as
+  hand-written machine code. \textbf{LISP} (1958) introduced many ideas of functional
+  programming, and \textbf{COBOL} (1959) became the language of business data
+  processing --- it still runs much of the world's banking.
+\item[1960s] \textbf{BASIC} (1964) was designed at Dartmouth College so that
+  students in every subject could use a computer. \textbf{Simula} (1967), from Norway,
+  introduced classes and objects for simulating systems such as queues and traffic.
+  \textbf{APL} introduced array programming.
+\item[1970s] Dennis Ritchie created \textbf{C} at Bell Labs (1972) to write the Unix
+  operating system. C's combination of efficiency and portability made it the
+  foundation of most software that exists today. \textbf{SQL} gave databases a common
+  language.
+\item[1980s] Cleve Moler wrote the first \textbf{MATLAB} so that his students could use
+  the Fortran linear-algebra libraries LINPACK and EISPACK without writing Fortran; it
+  became a commercial product in 1984. Bjarne Stroustrup added classes to C to create
+  \textbf{C++} (1985). Stephen Wolfram released \textbf{Mathematica} (1988), bringing
+  symbolic mathematics to the desktop.
+\item[1990s] Guido van Rossum released \textbf{\py} (1991). Ross Ihaka and Robert
+  Gentleman began \textbf{R} (1993) at the University of Auckland. Sun Microsystems
+  released \textbf{Java} (1995) with the promise ``write once, run anywhere'', and
+  Brendan Eich wrote the first version of \textbf{JavaScript} for the Netscape browser in
+  about ten days (1995).
+\item[2000s] Microsoft released \textbf{C\#} and the .NET platform (2000). Scientific
+  \py grew around NumPy (2006), and Google released \textbf{Go} (2009).
+\item[2010s] Mozilla started \textbf{Rust} (2010; version 1.0 in 2015), a systems
+  language that prevents whole classes of memory errors. \textbf{Julia} (2012) was
+  designed at MIT for fast scientific computing. Jupyter notebooks (2014) changed how
+  scientists share code. Deep learning, mostly driven from \py, made \py the
+  dominant language of data science and AI.
+\item[2020s] AI coding assistants based on large language models became part of everyday
+  programming. They can write and explain code in every language in these notes, which
+  makes \emph{reading} and \emph{checking} code an even more important skill
+  (Section~\ref{sec:ai-assistants}).
+\end{description}
+
+\section{Language families}
+
+Languages borrow from each other. Recognising family resemblances makes a new language
+much easier to read.
+
+\begin{itemize}
+\item \textbf{The C family} uses braces \code{\{\}} for blocks, semicolons to end
+  statements, \code{//} or \code{/* */} for comments, and \code{for (i = 0; i < n; i++)}
+  loops. It includes C, C++, C\#, Java, JavaScript, Go, Rust (partly), PHP and many
+  others. If you can read one of them, you can roughly read all of them.
+\item \textbf{The Fortran / MATLAB family} uses \code{end} to close blocks, indices that
+  start at 1, column-major arrays (Section~\ref{sec:rowcolumn}) and built-in matrix
+  operations. Julia's syntax is strongly influenced by MATLAB.
+\item \textbf{The scripting family} (\py, Ruby, Perl, R, Lua) is dynamically typed and
+  interpreted and favours short, readable code.
+\item \textbf{The functional family} (LISP, Scheme, Haskell, ML, OCaml, F\#, Erlang,
+  Elixir) treats functions as values and avoids changing state. The Wolfram Language
+  belongs here in spirit.
+\end{itemize}
+
+Table~\ref{tab:hello} shows the classic first program, which prints the words
+``Hello, world!'', in each language covered in these notes.
+
+\begin{table}[htbp]
+\centering
+\caption{``Hello, world!'' in the languages of these notes. Notice the amount of
+\emph{ceremony} (code that is needed but does not do the actual work) in each.}
+\label{tab:hello}
+\small
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash\ttfamily\footnotesize}X@{}}
+\toprule
+\textbf{Language} & \normalfont\textbf{Program}\\
+\midrule
+Python      & print("Hello, world!")\\[3pt]
+Fortran     & program hello\newline\hspace*{1em}print *, "Hello, world!"\newline end program hello\\[3pt]
+C           & \#include <stdio.h>\newline int main(void) \{\newline\hspace*{1em}printf("Hello, world!\textbackslash n");\newline\hspace*{1em}return 0;\newline\}\\[3pt]
+C++         & \#include <iostream>\newline int main() \{\newline\hspace*{1em}std::cout << "Hello, world!\textbackslash n";\newline\}\\[3pt]
+C\#         & Console.WriteLine("Hello, world!");\hfill\normalfont\textit{(top-level statement, .NET 6+)}\\[3pt]
+Java        & public class Hello \{\newline\hspace*{1em}public static void main(String[] args) \{\newline\hspace*{2em}System.out.println("Hello, world!");\newline\hspace*{1em}\}\newline\}\\[3pt]
+JavaScript  & console.log("Hello, world!");\\[3pt]
+MATLAB      & disp(\textquotesingle{}Hello, world!\textquotesingle{})\\[3pt]
+Wolfram     & Print["Hello, world!"]\\[3pt]
+R           & print("Hello, world!")\\[3pt]
+Julia       & println("Hello, world!")\\[3pt]
+Rust        & fn main() \{\newline\hspace*{1em}println!("Hello, world!");\newline\}\\[3pt]
+Go          & package main\newline import "fmt"\newline func main() \{\newline\hspace*{1em}fmt.Println("Hello, world!")\newline\}\\[3pt]
+SQL         & SELECT \textquotesingle{}Hello, world!\textquotesingle{};\\[3pt]
+Bash        & echo "Hello, world!"\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Which engineers use which languages?}
+
+There is no single ``engineering language''. Table~\ref{tab:disciplines} gives a rough
+picture of where each language is commonly met. It is a generalisation; every company and
+research group has its own habits.
+
+\begin{table}[htbp]
+\centering
+\caption{Where engineers commonly meet each language (a rough guide).}
+\label{tab:disciplines}
+\small
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Field} & \textbf{Typical languages and tools}\\
+\midrule
+Chemical \& process & \py (data, process models), MATLAB, Excel/VBA, Aspen Plus and gPROMS
+  (own modelling languages), Fortran (legacy thermodynamics), Modelica\\
+Materials science & \py (ASE, pymatgen, data analysis), Fortran (VASP, Quantum ESPRESSO),
+  C++ (LAMMPS), Julia, MATLAB\\
+Mechanical \& aerospace & MATLAB/Simulink, \py, C/C++ (embedded, simulation), Fortran (CFD,
+  FEM), Modelica\\
+Civil \& structural & \py, Excel/VBA, MATLAB, scripting in FEM packages (\py in Abaqus,
+  APDL in ANSYS), Dynamo/C\# in BIM tools\\
+Electrical \& electronic & C (microcontrollers), VHDL/Verilog (hardware), MATLAB, \py,
+  C++, assembly\\
+Robotics \& mechatronics & C++ and \py (ROS), C (firmware), MATLAB, Structured Text (PLCs)\\
+Petroleum \& mining & \py, MATLAB, Fortran/C++ (reservoir simulators), R (geostatistics)\\
+Biomedical & \py, MATLAB, R, C (devices)\\
+Software \& computer & everything; especially C, C++, Java, C\#, JavaScript/TypeScript,
+  \py, Go, Rust, SQL\\
+Data science \& AI (all fields) & \py (NumPy, pandas, PyTorch), R, SQL, Julia\\
+Manufacturing \& automation & Structured Text and Ladder Logic (PLCs), G-code (CNC),
+  \py, C\#\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{engnote}[Engineering note: the language is not the product]
+Clients do not buy code; they buy an answer, a design or a working machine. A few
+lines of \py that produce a correct, checked result in an afternoon are often
+worth more than a fast C++ program that takes a month. On the other hand, the control
+software of an aircraft must be fast, predictable and certified, and there \py is
+simply not an option. Choosing a language is part of the engineering design.
+\end{engnote}
+
+\section{How popular is each language?}
+\label{sec:popularity}
+
+Students often ask: \emph{``Which language is the most popular?''} It is a fair question,
+but the answer depends on what you count. This section looks at one well-known ranking, the
+TIOBE index, explains how to read it, and shows why different rankings disagree.
+
+\subsection*{The TIOBE index counts mentions on the web}
+
+The \term{TIOBE index} is a list published every month by the Dutch software-quality
+company TIOBE (\url{https://www.tiobe.com/tiobe-index/}). It is based on searches of the
+web: roughly speaking, it counts how many web pages, courses and suppliers mention each
+programming language, using several large search engines and websites. Each language then
+receives a \emph{rating}: its share of all those hits, in per cent. A rating of 20\% for
+\py therefore means that about one fifth of the hits counted for \emph{all} languages
+together were about \py. It does \emph{not} mean that 20\% of all programs are written in
+\py, and it says nothing about which language is ``best''.
+
+Table~\ref{tab:tiobe} shows the top 20 for November 2026, the month in which these notes
+were written, together with the place in these notes where each language is discussed.
+
+\begin{table}[htbp]
+\centering
+\caption{The 20 highest-rated languages in the TIOBE index for November 2026, and where
+each one appears in these notes. ``Change'' is the change in rating compared with
+November 2025, in percentage points.}
+\label{tab:tiobe}
+\small
+\begin{tabular}{@{}rlrrl@{}}
+\toprule
+\textbf{Rank} & \textbf{Language} & \textbf{Rating} & \textbf{Change} & \textbf{In these notes}\\
+\midrule
+1 & \py & 20.86\% & $-2.51$ & Chapter~\ref{ch:python}\\
+2 & C & 11.48\% & $+1.80$ & Chapter~\ref{ch:c}\\
+3 & Java & 8.89\% & $+0.34$ & Chapter~\ref{ch:java}\\
+4 & C++ & 8.35\% & $-0.60$ & Chapter~\ref{ch:cpp}\\
+5 & C\# & 3.39\% & $-4.26$ & Chapter~\ref{ch:csharp}\\
+6 & JavaScript & 2.42\% & $-1.00$ & Chapter~\ref{ch:javascript}\\
+7 & R & 2.27\% & $+0.60$ & Chapter~\ref{ch:r}\\
+8 & SQL & 1.91\% & $+0.11$ & Chapter~\ref{ch:others}\\
+9 & Visual Basic & 1.88\% & $-1.43$ & Chapters~\ref{ch:csharp} and \ref{ch:others} (VBA)\\
+10 & Go & 1.69\% & $-0.03$ & Chapter~\ref{ch:others}\\
+11 & Rust & 1.63\% & $+0.25$ & Chapter~\ref{ch:others}\\
+12 & PHP & 1.58\% & $+0.27$ & Chapter~\ref{ch:others} (briefly)\\
+13 & Fortran & 1.21\% & $-0.34$ & Chapter~\ref{ch:fortran}\\
+14 & Scratch & 1.15\% & $+0.13$ & Chapter~\ref{ch:others} (briefly)\\
+15 & Perl & 1.14\% & $-0.69$ & Chapter~\ref{ch:others} (briefly)\\
+16 & MATLAB & 1.08\% & $-0.30$ & Chapter~\ref{ch:matlab}\\
+17 & Assembly language & 0.92\% & $-0.24$ & Chapters~\ref{ch:intro} and \ref{ch:others}\\
+18 & Swift & 0.89\% & $+0.03$ & Chapter~\ref{ch:others} (briefly)\\
+19 & Delphi/Object Pascal & 0.78\% & $-1.28$ & Chapter~\ref{ch:others} (briefly)\\
+20 & Dart & 0.74\% & $+0.05$ & Chapter~\ref{ch:others} (briefly)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Old and general-purpose languages lead the table}
+
+Four observations are worth making.
+
+\begin{enumerate}
+\item \textbf{\py is clearly first.} Its rating is almost twice that of the second
+  language. This is one reason why ENG 101 teaches \py: the skills you learn are the ones
+  most in demand, and help is easy to find.
+\item \textbf{Old languages are still strong.} C (1972) is second, Fortran (1957) is
+  13th, and assembly language is 17th. Languages do not disappear when newer ones arrive,
+  because the software written in them is still running and still needs engineers who can
+  read it.
+\item \textbf{The top four take half of everything.} \py, C, Java and C++ together have
+  a rating of about 50\%. After the fifth place every language is below 3\%, so the
+  differences between, say, rank 10 and rank 20 are small and can change from month to
+  month.
+\item \textbf{Low rank does not mean unimportant.} Julia is 23rd (0.68\%), Ladder Logic
+  is 37th, LabVIEW is 48th, and the Wolfram Language, Structured Text and VHDL are
+  somewhere between 51 and 100. Yet each of these is the standard tool in its own field: a
+  control engineer programs PLCs in Ladder Logic every day, whatever the index says.
+  Specialised languages have few users compared with general-purpose ones, but those
+  users cannot replace them.
+\end{enumerate}
+
+\subsection*{Other rankings measure something different}
+
+You may read elsewhere that JavaScript and TypeScript are the most popular languages. That
+statement is also based on real data --- it just measures something different.
+\begin{itemize}
+\item \textbf{TIOBE} counts mentions on the web. It favours languages that are widely
+  \emph{taught and written about}, including old ones. Here JavaScript is 6th and
+  TypeScript only 41st.
+\item \textbf{Rankings based on GitHub}, the website where most open-source code is
+  stored, count how much code is \emph{being written and shared} in public projects.
+  Web development produces an enormous amount of public code, so JavaScript, TypeScript
+  and \py come out on top.
+\item \textbf{Developer surveys}, such as the yearly Stack Overflow survey, ask
+  programmers which languages they \emph{use}. Most respondents are professional software
+  developers, many of them web developers, so JavaScript, SQL and \py lead.
+\item \textbf{Job advertisements} show what employers in a particular country and
+  industry are looking for, which may be different again.
+\end{itemize}
+None of these rankings counts the code that engineers write most often: scripts inside a
+company, firmware in a product, PLC programs in a factory, or simulation codes on a
+cluster. This code is rarely published on the web, so it is almost invisible to every
+ranking.
+
+\begin{keyidea}
+A popularity ranking measures how visible a language is in one particular place (web
+pages, public code, a survey). It is useful for answering ``Will I find help, libraries
+and colleagues for this language?'' It does not answer ``Which language should I use for
+this task?'' For that question, use the engineering criteria of
+Chapter~\ref{ch:choosing}.
+\end{keyidea}
+
+\begin{tryit}
+Open \url{https://www.tiobe.com/tiobe-index/} and compare today's top 10 with
+Table~\ref{tab:tiobe}. Which languages have moved? The page also has a chart of ratings
+since 2001: find the year in which \py overtook Java and C.
+\end{tryit}
+
+\section{What all languages share}
+
+Despite their differences, every general-purpose language provides the same core building
+blocks. Chapter by chapter we will look for them:
+\begin{enumerate}
+\item \textbf{values and types} --- numbers, text, true/false;
+\item \textbf{variables} --- names that refer to values;
+\item \textbf{operators and expressions} --- \code{+}, \code{*}, \code{<}, \code{and}
+  \ldots;
+\item \textbf{control flow} --- \code{if}/\code{else} decisions and loops;
+\item \textbf{functions} --- named, reusable pieces of code with inputs and outputs;
+\item \textbf{collections} --- arrays, lists, dictionaries;
+\item \textbf{input and output} --- reading and writing the screen and files;
+\item \textbf{modules and libraries} --- code written by others that you can reuse;
+\item \textbf{error handling} --- what happens when something goes wrong.
+\end{enumerate}
+Each language chapter is organised around this list, so you can jump straight to, say,
+``functions in Fortran'' and compare it with ``functions in \py''.
+
+\begin{exercises}
+\item Write the Euclidean algorithm for the greatest common divisor as a flowchart. Then
+  trace it by hand for $a = 252$, $b = 105$. How many times does the loop run?
+\item Classify each of the following as imperative, object-oriented, functional,
+  declarative or array style, and explain why: (a) an Excel formula
+  \code{=AVERAGE(B2:B50)}; (b) a \py loop that adds numbers one by one; (c) the SQL query in
+  this chapter; (d) the MATLAB statement \code{y = A*x + b}; (e) a \py class
+  \code{Reactor} with a method \code{step(dt)}.
+\item The text says that ``compiled'' and ``interpreted'' describe implementations, not
+  languages. Find one example of a compiler for \py and one example of an interpreter for C
+  (a web search will help). Why do you think they are rarely used?
+\item Look at Table~\ref{tab:hello}. Count the lines needed for ``Hello, world!'' in each
+  language. Which languages need a function called \code{main}? Why do you think compiled
+  languages tend to need one?
+\item Ask an engineer you know (a lecturer, a relative, an alumnus) which programming
+  languages they use at work, and for what. Compare the answer with
+  Table~\ref{tab:disciplines}.
+\item In JavaScript, \code{"3" + 4} gives \code{"34"}, but \code{"3" - 4} gives \code{-1}.
+  Explain in your own words why such behaviour could be dangerous in an engineering
+  calculation.
+\item Look at Table~\ref{tab:tiobe}. Add up the ratings of the languages that have their
+  own chapter in these notes. What share of the TIOBE index do these chapters cover? Then
+  explain in two or three sentences why TypeScript can be near the top of a ranking based on
+  GitHub but only 41st in the TIOBE index.
+\end{exercises}

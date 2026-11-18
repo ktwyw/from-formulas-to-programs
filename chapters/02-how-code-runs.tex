@@ -1,0 +1,535 @@
+% =====================================================================
+\BookChapter[How Code Becomes Computation]{How Code Becomes Computation}
+\label{ch:howcoderuns}
+
+\begin{researchquestion}
+What happens between pressing Run and seeing a number, and why is the number sometimes slightly wrong?
+\end{researchquestion}
+% =====================================================================
+
+When you press ``Run'' in a \py editor, a lot happens before your answer appears. This
+chapter opens the box. We look at how source code is translated and executed, how a
+computer stores numbers and text, and why some calculations give surprising answers.
+These ideas are the same for every language, and they explain many of the differences
+you will see in later chapters.
+
+\LearningOutcomes{Explain how compilers, interpreters and just-in-time compilers execute a program; state the range of an integer type and the precision of a floating-point type; predict when rounding error and cancellation will damage a result; explain how arrays are laid out in memory and why loop order matters; distinguish syntax, run-time and logic errors; and name the libraries on which numerical software is built.}
+
+\section{The computer in one page}
+
+For our purposes a computer has four parts.
+\begin{itemize}
+\item The \term{processor} (CPU) executes machine instructions. A modern laptop CPU has
+  several \emph{cores}, each of which can run its own stream of instructions, and each
+  core performs billions of simple operations per second.
+\item The \term{memory} (RAM) stores the program and its data while it runs. It is fast
+  but forgets everything when the power goes off. A laptop typically has 8--32~GB.
+\item The \term{storage} (SSD or hard disk) keeps files permanently. It is much slower
+  than RAM.
+\item \term[input/output devices]{Input/output devices}: keyboard, screen, network, sensors, and so on.
+\end{itemize}
+Many computers also have a \term{GPU} (graphics processing unit), which has thousands of
+small cores that perform the same operation on many numbers at once. GPUs were built for
+graphics but are now essential for machine learning and for some simulations.
+
+Everything in memory is stored as \term{bits} (0 or 1), grouped into \term{bytes} of 8
+bits. One byte can hold $2^8 = 256$ different values. Whether a particular group of bytes
+means a number, a letter, a pixel colour or a machine instruction depends entirely on how
+the program interprets it. That is what \emph{types} are for.
+
+\section{Compilers}
+
+A \term{compiler} reads the complete source code and produces an executable file of
+machine code. Figure~\ref{fig:compile} shows the steps for a C program; Fortran, C++,
+Rust and Go work the same way.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=7mm and 9mm,
+  box/.style={draw=nublue,fill=nublue!6,rounded corners=2pt,minimum height=9mm,
+    font=\sffamily\small,align=center,inner sep=4pt},
+  file/.style={draw=gray,fill=white,font=\ttfamily\small,minimum height=7mm,inner sep=3pt},
+  arr/.style={-{Stealth[length=2.5mm]},thick}]
+\node[file] (src) {drag.c};
+\node[box,right=of src] (pre) {pre-\\processor};
+\node[box,right=of pre] (comp) {compiler};
+\node[file,right=of comp] (obj) {drag.o};
+\node[box,right=of obj] (link) {linker};
+\node[file,right=of link] (exe) {drag};
+\node[file,below=of link] (lib) {libm.so};
+\draw[arr] (src) -- (pre);
+\draw[arr] (pre) -- (comp);
+\draw[arr] (comp) -- (obj);
+\draw[arr] (obj) -- (link);
+\draw[arr] (link) -- (exe);
+\draw[arr] (lib) -- (link);
+\node[below=1mm of comp,font=\sffamily\scriptsize,align=center,text=gray]{checks syntax and types,\\optimises, emits\\machine code};
+\node[below=1mm of exe,font=\sffamily\scriptsize,align=center,text=gray]{run it:\\\texttt{./drag}};
+\end{tikzpicture}
+\caption{From source code to executable. The \emph{compiler} turns each source file into
+an object file of machine code; the \emph{linker} joins object files and libraries (here
+the maths library) into one executable.}
+\label{fig:compile}
+\end{figure}
+
+On the command line it looks like this:
+\begin{lstlisting}[style=shell]
+$ gcc -O2 -o drag drag.c -lm      # compile and link, with optimisation
+$ ./drag                          # run the executable
+\end{lstlisting}
+The option \code{-O2} asks the compiler to \term{optimise}: to rearrange and simplify the
+machine code so that it runs faster while giving the same results. Optimising compilers
+are remarkably good; they unroll loops, keep values in registers, and use special
+instructions that process several numbers at once (called \term{SIMD} or vector
+instructions).
+
+Compiling has three consequences that you will notice when you use a compiled language.
+\begin{enumerate}
+\item \textbf{Errors are found early.} Spelling mistakes, missing semicolons and type
+  mismatches stop the compilation; the program never runs with them.
+\item \textbf{There is an extra step.} After every change you must recompile. For large
+  programs this can take minutes, so tools such as \code{make} and \code{CMake} recompile
+  only what has changed.
+\item \textbf{The executable is tied to a platform.} A program compiled on Linux for an
+  Intel processor does not run on a Mac with an Apple-silicon processor. You must compile
+  it again there (the source code is portable; the executable is not).
+\end{enumerate}
+
+\section{Interpreters}
+
+An \term{interpreter} executes a program directly from its source code, statement by
+statement. The standard \py implementation, called \term{CPython}, first translates your
+code into a compact \term{bytecode} and then runs a loop that reads one bytecode
+instruction at a time and performs it. You can see the bytecode with the \code{dis}
+module:
+\begin{lstlisting}[language=Python]
+import dis
+def f(a, b):
+    return a * b + 1
+dis.dis(f)
+\end{lstlisting}
+The output (slightly shortened) lists instructions such as \code{LOAD\_FAST a},
+\code{LOAD\_FAST b}, \code{BINARY\_OP *}, \code{LOAD\_CONST 1}, \code{BINARY\_OP +},
+\code{RETURN\_VALUE}. Each of these is carried out by a piece of C code inside the
+interpreter.
+
+Interpreters have the opposite strengths of compilers.
+\begin{itemize}
+\item \textbf{Fast feedback}: you change a line and run it immediately. You can even type
+  statements one at a time in an interactive session (a \term{REPL}: read--evaluate--print
+  loop) or a Jupyter notebook cell.
+\item \textbf{Portability}: the same \file{.py} file runs on Windows, macOS, Linux and a
+  Raspberry Pi, as long as a \py interpreter is installed.
+\item \textbf{Slower execution of loops}: every operation goes through the interpreter
+  loop, checks the types of its operands, and creates new objects. A simple numerical loop
+  in pure \py can be 10 to 100 times slower than the same loop in C.
+\end{itemize}
+
+\section{Virtual machines and just-in-time compilation}
+
+Java and C\# take a middle path. Their compilers translate source code into bytecode for a
+\term{virtual machine}: the Java Virtual Machine (JVM) or the .NET Common Language Runtime
+(CLR). The bytecode is the same on every platform. When the program runs, the virtual
+machine watches which parts are executed often and compiles those parts to native machine
+code on the fly. This is \term{just-in-time (JIT) compilation}. After a short warm-up,
+JIT-compiled code runs nearly as fast as C.
+
+JavaScript engines in web browsers (V8 in Chrome and Node.js, SpiderMonkey in Firefox)
+are JIT compilers too, which is why complex applications can run inside a web page.
+\textbf{Julia} uses JIT compilation in a particular way: the first time you call a
+function with arguments of certain types, Julia compiles a specialised machine-code version
+for exactly those types. That first call is slow; later calls are fast.
+
+\begin{table}[htbp]
+\centering
+\caption{How the languages in these notes are usually executed.}
+\label{tab:execution}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Language} & \textbf{Usual execution model} & \textbf{File you run}\\
+\midrule
+Fortran, C, C++, Rust, Go & ahead-of-time compiled & native executable\\
+Java, Kotlin, Scala & bytecode + JIT on the JVM & \file{.class} / \file{.jar}\\
+C\#, F\#, Visual Basic .NET & bytecode + JIT on .NET & \file{.dll} / \file{.exe}\\
+JavaScript, TypeScript & JIT in browser or Node.js & \file{.js} source\\
+\py & bytecode interpreter (CPython) & \file{.py} source\\
+MATLAB & interpreter with JIT engine & \file{.m} source\\
+R, Wolfram Language & interpreter & \file{.R}, \file{.wl}/\file{.nb}\\
+Julia & JIT (per-type specialisation) & \file{.jl} source\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{keyidea}
+The speed difference between languages matters mostly for \emph{loops over many simple
+operations}. If your program spends its time inside a library routine (solving a linear
+system, computing an FFT, training a neural network), it runs at compiled speed no matter
+which language called the routine. This is why slow-looking languages like \py and
+MATLAB are used for heavy numerical work: the heavy part is done by compiled Fortran, C
+or C++ underneath.
+\end{keyidea}
+
+\section{How integers are stored}
+
+An integer is stored in binary. With $n$ bits you can represent $2^n$ different values.
+The number $13$ is $1101_2 = 1\cdot 8 + 1 \cdot 4 + 0 \cdot 2 + 1 \cdot 1$. Most languages
+store integers in a fixed number of bits:
+\begin{center}
+\small
+\begin{tabular}{@{}llr@{}}
+\toprule
+\textbf{Size} & \textbf{Typical names} & \textbf{Range (signed)}\\
+\midrule
+8 bits & \code{int8}, \code{signed char}, \code{byte} & $-128$ to $127$\\
+16 bits & \code{int16}, \code{short} & $-32\,768$ to $32\,767$\\
+32 bits & \code{int32}, \code{int} (C, Java), \code{integer} (Fortran) & about $\pm 2.1\times 10^{9}$\\
+64 bits & \code{int64}, \code{long long}, \code{long} (Java) & about $\pm 9.2\times 10^{18}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Negative numbers are stored in \term{two's complement} form, which makes addition of
+positive and negative numbers use the same circuit.
+
+What happens if a result does not fit? This is called \term{integer overflow}. In C a
+signed overflow is formally ``undefined behaviour'' --- anything may happen; in practice
+the value usually wraps around:
+\begin{lstlisting}[language=Python]
+import numpy as np
+print(np.int32(2147483647) + np.int32(1))     # -2147483648 (with a warning)
+\end{lstlisting}
+Plain \py integers are different: they grow automatically to as many bits as needed, so
+\code{2**200} is computed exactly. This is convenient but slower, and it is one reason why
+NumPy arrays use fixed-size integers.
+
+\begin{history}[A little history: Ariane 5]
+On 4 June 1996 the first Ariane 5 rocket veered off course and was destroyed 37 seconds
+after launch. The inquiry found that a 64-bit floating-point number related to the
+horizontal velocity was converted to a 16-bit signed integer. The value was larger than
+$32\,767$, the conversion failed, and the guidance computers shut down. The code had been
+reused from Ariane 4, whose flight profile never produced such large values. The rocket
+and its payload were lost. A type conversion is an engineering decision.
+\end{history}
+
+\section{How real numbers are stored: floating point}
+\label{sec:floatingpoint}
+
+Real numbers such as $9.81$ or $6.022\times10^{23}$ are stored as \term{floating-point
+numbers}, following the IEEE~754 standard that virtually all hardware uses. A
+floating-point number is stored in scientific notation in base 2:
+\[
+  x = (-1)^s \times (1.f)_2 \times 2^{e},
+\]
+with a sign bit $s$, a fraction $f$ (the significant digits) and an exponent $e$. The two
+common formats are
+\begin{center}
+\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Format} & \textbf{Names} & \textbf{Bits} & \textbf{Significant digits} & \textbf{Largest value}\\
+\midrule
+single & \code{float}, \code{real(4)}, \code{float32} & 32 & about 7 & $3.4\times10^{38}$\\
+double & \code{double}, \code{real(8)}, \code{float64} & 64 & about 16 & $1.8\times10^{308}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+\py's \code{float}, MATLAB's default numbers, R's \code{numeric}, JavaScript's
+\code{Number} and Julia's \code{Float64} are all IEEE double precision. In C, C++, Java and
+C\# you choose \code{double} explicitly; in Fortran you choose a \code{kind}
+(Section~\ref{sec:fortran-kinds}). For engineering calculations, use double precision
+unless you have a good reason not to.
+
+\subsection*{Most decimal numbers cannot be stored exactly}
+
+Just as $1/3 = 0.3333\ldots$ cannot be written exactly with a finite number of decimal
+digits, $0.1$ cannot be written exactly with a finite number of binary digits. The
+computer stores the nearest representable value:
+\begin{lstlisting}[language=Python]
+>>> format(0.1, '.20f')
+'0.10000000000000000555'
+>>> 0.1 + 0.2
+0.30000000000000004
+>>> 0.1 + 0.2 == 0.3
+False
+\end{lstlisting}
+This is not a bug in \py; you get the same answer in C, Java, JavaScript, MATLAB and every
+other language that uses IEEE doubles. Small \term{rounding errors} like this can also
+accumulate:
+\begin{lstlisting}[language=Python]
+total = 0.0
+for i in range(10):
+    total += 0.1
+print(total, total == 1.0)        # 0.9999999999999999 False
+\end{lstlisting}
+(Interestingly, \py's built-in \code{sum([0.1]*10)} returns exactly \code{1.0} in
+recent versions, because it uses a more careful summation algorithm internally. Libraries
+care about these details so that you do not have to.)
+
+\begin{pitfall}[Common pitfall: comparing floating-point numbers with \texttt{==}]
+Never test whether two computed floating-point numbers are \emph{exactly} equal. Test
+whether they are close, with a tolerance that makes sense for your problem:
+\begin{lstlisting}[language=Python]
+import math
+math.isclose(0.1 + 0.2, 0.3)                 # True (relative tolerance 1e-9)
+abs(a - b) <= 1e-12 * max(abs(a), abs(b))    # the same idea by hand
+\end{lstlisting}
+Every language has an equivalent: \code{numpy.isclose}, \code{all.equal} in R,
+\code{isapprox} (or \code{a $\approx$ b}) in Julia, and \code{abs(a-b) < tol} in C,
+Fortran and MATLAB.
+\end{pitfall}
+
+\subsection*{Machine epsilon sets the best possible precision}
+
+The gap between $1$ and the next larger double is called \term{machine epsilon},
+$\varepsilon = 2^{-52} \approx 2.22\times10^{-16}$. It sets the best relative precision you
+can hope for. Adding a number smaller than about $\varepsilon x$ to $x$ has no effect:
+\begin{lstlisting}[language=Python]
+>>> import sys
+>>> sys.float_info.epsilon
+2.220446049250313e-16
+>>> 1e16 + 1 - 1e16
+0.0
+\end{lstlisting}
+
+\subsection*{Subtracting nearly equal numbers destroys digits}
+
+The most dangerous rounding error happens when you subtract two nearly equal numbers. The
+leading digits cancel, and what is left is dominated by rounding error. For small $x$,
+$1-\cos x \approx x^2/2$, so $(1-\cos x)/x^2$ should be close to $0.5$:
+\begin{lstlisting}[language=Python]
+>>> import math
+>>> x = 1e-8
+>>> (1 - math.cos(x)) / x**2          # catastrophic cancellation
+0.0
+>>> 2 * math.sin(x/2)**2 / x**2       # same formula, rewritten
+0.5
+\end{lstlisting}
+Since $\cos(10^{-8})$ is equal to $1$ to within machine precision, the first formula
+loses every significant digit. The identity $1-\cos x = 2\sin^2(x/2)$ avoids the
+subtraction. Numerical analysts spend careers on such rewrites; libraries such as
+\code{math.expm1} and \code{math.log1p} exist for the same reason.
+
+\subsection*{Infinity and not-a-number spread silently}
+
+IEEE arithmetic does not stop on errors. Instead it produces special values:
+\code{inf} (infinity, e.g.\ $1.0/0.0$ in C or NumPy), \code{-inf}, and \code{nan} (``not
+a number'', e.g.\ $0.0/0.0$ or $\sqrt{-1}$). A \code{nan} spreads through every
+calculation it touches, and \code{nan == nan} is \code{False}. If a simulation suddenly
+prints \code{nan}, something earlier divided by zero or overflowed --- often because the
+time step was too large.
+
+\begin{engnote}
+Single precision (\code{float32}) has only about 7 significant digits. That is enough
+for a measured temperature, and GPUs process single (and even half) precision much faster
+than double, which is why machine-learning code uses it. But when a simulation adds many
+small increments to a large total (a long time integration, a large sum of forces), 7
+digits can be far too few. If results change when you switch from \code{float32} to
+\code{float64}, believe the \code{float64} results.
+\end{engnote}
+
+\section{Text: characters and Unicode}
+
+Text is stored as numbers too. The old \term{ASCII} code assigned the numbers 0--127 to
+the English letters, digits and punctuation; \code{\sq{}A\sq{}} is 65. To represent all the
+world's writing systems --- Kazakh, Russian, Chinese, mathematical symbols, emoji ---
+modern systems use \term{Unicode}, which assigns a number (a \emph{code point}) to more
+than 150\,000 characters. The \term{UTF-8} encoding stores these code points in one to
+four bytes and is the standard for files and the web. \py~3 strings are Unicode by
+default, so strings that contain Kazakh or Russian letters, Greek symbols such as
+$\Delta$ or $\mu$, or the degree sign work without any effort. In C
+and older Fortran, text is a sequence of bytes, and handling non-English text needs more
+care.
+
+\section{Memory: names, values and references}
+
+Different languages have different mental models of what a variable is.
+
+\paragraph{Variables as boxes (C, Fortran).}
+In C, the declaration \code{double x;} reserves a box of 8 bytes in memory, and the name
+\code{x} refers to that box. \code{x = 3.0;} puts a value into the box. \code{y = x;}
+\emph{copies} the value into another box.
+
+\paragraph{Variables as labels (\py, JavaScript, Java objects).}
+In \py, \code{x = [1, 2, 3]} creates a list object somewhere in memory and attaches the
+name \code{x} to it. \code{y = x} attaches a second name to the \emph{same} object --- it
+does not copy it:
+\begin{lstlisting}[language=Python]
+x = [1, 2, 3]
+y = x
+y.append(4)
+print(x)          # [1, 2, 3, 4]  -- x and y are the same list
+z = x.copy()      # an independent copy
+\end{lstlisting}
+This is called \term{reference semantics}. MATLAB and R behave differently: they use
+\term{value semantics} for arrays, so \code{y = x; y(1) = 99;} leaves \code{x} unchanged
+(internally they copy lazily, only when you modify). Knowing which model a language uses
+prevents some very confusing bugs.
+
+\paragraph{The stack and the heap.}
+Programs use two regions of memory. The \term{stack} holds the local variables of
+functions that are currently running; it is fast and is cleaned up automatically when a
+function returns. The \term{heap} holds data whose size or lifetime is not known in
+advance, such as a large array read from a file. In C you request heap memory with
+\code{malloc} and must release it with \code{free}; forgetting to do so is a \term{memory
+leak}, and using memory after freeing it is a serious bug. \py, Java, C\#, JavaScript,
+Julia, R and MATLAB use a \term{garbage collector} that frees unused memory automatically.
+C++ and Rust use rules about object \emph{ownership} so that memory is released at a
+predictable moment without a garbage collector.
+
+\section{Arrays in memory: row-major and column-major}
+\label{sec:rowcolumn}
+
+A matrix is two-dimensional, but memory is one-dimensional: a long row of numbered bytes.
+There are two ways to lay out a matrix
+$A = \begin{pmatrix} a_{11} & a_{12} & a_{13} \\ a_{21} & a_{22} & a_{23}\end{pmatrix}$
+in memory:
+\begin{center}
+\begin{tikzpicture}[cell/.style={draw,minimum width=10mm,minimum height=6mm,font=\small}]
+\node[font=\sffamily\small,anchor=east] at (-0.3,0) {row-major (C, C++, \py/NumPy):};
+\foreach \v [count=\i] in {$a_{11}$,$a_{12}$,$a_{13}$,$a_{21}$,$a_{22}$,$a_{23}$}
+  \node[cell,fill=nublue!10] at (\i*1.0,0) {\v};
+\node[font=\sffamily\small,anchor=east] at (-0.3,-1) {column-major (Fortran, MATLAB, R, Julia):};
+\foreach \v [count=\i] in {$a_{11}$,$a_{21}$,$a_{12}$,$a_{22}$,$a_{13}$,$a_{23}$}
+  \node[cell,fill=nugold!15] at (\i*1.0,-1) {\v};
+\end{tikzpicture}
+\end{center}
+In \term{row-major} order the elements of each row are next to each other; in
+\term{column-major} order the elements of each column are. This matters for speed,
+because the processor loads memory in chunks (\emph{cache lines} of 64 bytes). A loop that
+walks through memory in order is fast; a loop that jumps around is slow. In C you should
+make the \emph{last} index change fastest; in Fortran, the \emph{first}.
+\begin{lstlisting}[language=C]
+/* C: fast, j (last index) varies fastest */
+for (i = 0; i < n; i++)
+    for (j = 0; j < n; j++)
+        s += a[i][j];
+\end{lstlisting}
+\begin{lstlisting}[language={[08]Fortran}]
+! Fortran: fast, i (first index) varies fastest
+do j = 1, n
+    do i = 1, n
+        s = s + a(i, j)
+    end do
+end do
+\end{lstlisting}
+
+\section{Indexing: from 0 or from 1?}
+
+Languages also disagree about the number of the first element. In C, C++, C\#, Java,
+JavaScript, \py, Go and Rust the first element of an array is element \code{0}. In
+Fortran, MATLAB, R, Julia, the Wolfram Language and Lua it is element \code{1}. (Fortran
+even lets you choose any starting index.)
+
+Zero-based indexing comes from C, where \code{a[i]} means ``the element $i$ positions
+after the start of the array''. One-based indexing matches mathematical notation, where
+the first component of a vector is $x_1$. Neither is better. But when you translate an
+algorithm from a textbook (one-based) to \py (zero-based) or from MATLAB to \py, you must
+shift every index, and \term{off-by-one errors} are among the most common bugs in
+programming.
+
+\begin{pitfall}[Common pitfall: ranges]
+\py's \code{range(1, 5)} gives $1, 2, 3, 4$: the end is \emph{excluded}. MATLAB's
+\code{1:5} and Julia's \code{1:5} give $1, 2, 3, 4, 5$: the end is \emph{included}.
+Fortran's \code{do i = 1, 5} also includes 5. R's \code{1:5} includes 5 too. Check the
+first and last iteration of every loop you translate.
+\end{pitfall}
+
+\section{Three kinds of errors}
+
+Whatever language you use, you will meet three kinds of errors.
+\begin{enumerate}
+\item \textbf{Syntax errors}: the code does not follow the grammar of the language
+  (a missing bracket, a misspelt keyword). The compiler or interpreter tells you where;
+  read the message carefully, and look at the line \emph{before} the one reported too.
+\item \textbf{Run-time errors}: the code is grammatically correct but fails while
+  running (dividing by zero in integer arithmetic, opening a file that does not exist,
+  using an index outside an array). \py raises an \term{exception} with a
+  \term{traceback} that shows where it happened.
+\item \textbf{Logic errors}: the program runs and produces an answer, but the answer is
+  wrong (a wrong sign, a wrong unit, a loop that stops one step early). These are the most
+  dangerous because nothing tells you about them. The only defence is \emph{testing}:
+  compare with a hand calculation, an exact solution, a limiting case, or a different
+  method.
+\end{enumerate}
+
+\begin{history}[A little history: the Mars Climate Orbiter]
+In September 1999 NASA's Mars Climate Orbiter was lost when it entered the Martian
+atmosphere far too low. One team's software reported thruster impulse in pound-force
+seconds; the navigation software expected newton-seconds. The program ran without any
+error message: it was a logic error, a units mismatch. Some modern tools can attach
+physical units to numbers to catch such mistakes (the \py package \code{pint}, units in
+the Wolfram Language and F\#, \code{Unitful.jl} in Julia).
+\end{history}
+
+\section{Parallel computing}
+
+Since about 2005 the clock speed of processors has hardly increased. Instead, computers
+have more and more \emph{cores}: a laptop has 8--16, a workstation 32--128, and a
+supercomputer millions. A program that uses only one core uses only a small fraction of the
+machine. \term[parallel computing]{Parallel computing} divides the work among many cores, or among many
+computers. There are three common models, and you will meet their names in the
+documentation of every simulation package.
+\begin{itemize}
+\item \textbf{Shared memory (threads).} Several threads of one program run on the cores of
+  one computer and share its memory. In C, C++ and Fortran the usual tool is
+  \textbf{OpenMP}: a comment-like directive before a loop asks the compiler to split the
+  iterations among threads. Julia has \code{Threads.@threads}; Java, C\# and Rust have
+  thread libraries; NumPy and MATLAB use threads automatically inside many library routines
+  (for example, matrix multiplication).
+\item \textbf{Distributed memory (message passing).} Many separate processes, possibly on
+  different computers of a cluster, each with its own memory, exchange data by sending
+  messages. The standard is \textbf{MPI} (Message Passing Interface), used by almost every
+  large CFD, FEM, MD and climate code, with bindings for C, C++, Fortran, \py
+  (\code{mpi4py}) and Julia.
+\item \textbf{Accelerators (GPUs).} A GPU applies the same operation to thousands of data
+  elements at once. It is programmed with \textbf{CUDA} (NVIDIA), HIP (AMD), SYCL or OpenCL,
+  or from high-level languages through libraries such as CuPy, PyTorch, JAX and
+  \code{CUDA.jl}. Molecular dynamics, CFD and machine learning gain factors of ten to a
+  hundred.
+\end{itemize}
+Parallel programs are harder to write and to debug than serial ones. Two threads that
+update the same variable at the same time cause a \term{race condition}, whose result
+depends on timing and may differ from run to run. And not everything can be parallelised:
+if 10\% of a program is inherently serial, then even with infinitely many cores it cannot
+run more than 10 times faster (\term{Amdahl's law}). The good news for most engineers is
+that parallelism is usually already built into the libraries and simulation tools they use.
+
+\section{Libraries: standing on the shoulders of Fortran}
+
+No engineer writes a matrix inversion or a fast Fourier transform from scratch for real
+work. They use \term{libraries}: collections of well-tested routines. A few libraries are
+so important that almost every language uses them underneath.
+\begin{itemize}
+\item \textbf{BLAS} (Basic Linear Algebra Subprograms, 1979 onwards) defines vector and
+  matrix operations such as dot products and matrix multiplication.
+\item \textbf{LAPACK} (1992) solves linear systems, eigenvalue problems and least-squares
+  problems using BLAS. It was originally written in Fortran 77 and is now in modern
+  Fortran.
+\item Optimised implementations such as \textbf{OpenBLAS}, Intel's \textbf{oneMKL} and
+  Apple's \textbf{Accelerate} make these routines run close to the peak speed of the
+  hardware.
+\item \textbf{FFTW} computes fast Fourier transforms.
+\end{itemize}
+When you write \code{numpy.linalg.solve(A, b)} in \py, \code{A\textbackslash b} in MATLAB,
+\code{solve(A, b)} in R or \code{A \textbackslash\ b} in Julia, the actual work is done by
+LAPACK and BLAS. In a sense, every scientific language is a friendly front end to the same
+Fortran and C code.
+
+\begin{exercises}
+\item Convert the decimal numbers 5, 12 and 100 to binary by hand. Check your answers with
+  \py's \code{bin()} function.
+\item What is the largest integer that can be stored in an unsigned 16-bit integer? A
+  sensor reports a count every second into a 16-bit unsigned counter. After how long does
+  the counter overflow?
+\item Run \code{0.1 + 0.2 == 0.3} in \py. Then try the same in a web browser's JavaScript
+  console (press F12) with \code{0.1 + 0.2 === 0.3}. Explain the result.
+\item The quadratic formula $x = (-b \pm\sqrt{b^2-4ac})/(2a)$ suffers from cancellation when
+  $b^2 \gg 4ac$. Compute the small root of $x^2 + 10^8 x + 1 = 0$ with the formula in \py
+  and compare with the rewritten formula $x = 2c/(-b - \sqrt{b^2-4ac})$. Which is right?
+\item Write a \py loop that sums $1/n^2$ for $n = 1, 2, \ldots, 10^6$, first from $n=1$
+  upwards and then from $n=10^6$ downwards, using \code{numpy.float32} for the running
+  total. Compare both with $\pi^2/6$. Why does the order matter?
+\item A \py student writes \code{a = [[0]*3]*3} to create a $3\times3$ matrix of zeros
+  and then sets \code{a[0][0] = 1}. Print \code{a}. Explain the surprising result using the
+  idea of references. How should the matrix be created?
+\end{exercises}

@@ -1,0 +1,430 @@
+% =====================================================================
+\phantomsection
+\addcontentsline{toc}{part}{Compiled Languages for Speed and Systems}
+\BookChapter[Fortran]{Fortran: Formulas at Full Speed}
+\label{ch:fortran}
+
+\begin{researchquestion}
+Why is a language from 1957 still running weather forecasts, crash simulations and materials calculations?
+\end{researchquestion}
+\OrientationNote
+% =====================================================================
+
+\begin{factsheet}{Fortran}
+First appeared & 1957 (FORTRAN I); modern standards Fortran 90, 95, 2003, 2008, 2018, 2023\\
+Designed by & John Backus and team, IBM\\
+Paradigms & procedural, array programming; object-oriented since Fortran 2003; parallel (coarrays)\\
+Typing & static, strong (with \code{implicit none})\\
+Execution & compiled to native code\\
+File extension & \file{.f90} (free form); \file{.f}, \file{.for} (old fixed form)\\
+Compilers & gfortran (free, GNU), Intel ifx (free), LLVM Flang (free), NVIDIA nvfortran, Cray\\
+Used for & weather and climate models, computational fluid dynamics, structural analysis,
+  quantum chemistry and materials simulation, nuclear engineering, numerical libraries\\
+Famous software & LAPACK, BLAS, VASP, Quantum ESPRESSO, WRF (weather), NASTRAN (origins),
+  many CFD and reactor codes, parts of SciPy\\
+\end{factsheet}
+
+Fortran is the oldest programming language still in wide use, and it is still one of the
+fastest. If you work in computational mechanics, CFD, climate science or materials
+simulation, you will almost certainly meet it. Modern Fortran looks very different from
+the FORTRAN 77 code of the 1980s that gave the language a reputation for being
+old-fashioned: it has free-form source, modules, dynamic arrays, whole-array operations,
+objects and built-in parallelism.
+
+\LearningOutcomes{Compile and run a modern Fortran program; declare variables with an explicit precision; use whole-array operations, functions, subroutines and modules; read formatted output statements; recognise old fixed-form FORTRAN 77 code; and explain how Fortran and Python are used together.}
+
+\section{History and philosophy}
+
+\begin{history}
+In 1953 John Backus proposed to his managers at IBM that a program should translate
+mathematical formulas into machine code automatically. Sceptics argued that such
+translated code would be far slower than hand-written machine code and that no serious
+programmer would use it. Backus's team spent three years building an \emph{optimising}
+compiler for the IBM 704 and released FORTRAN in 1957. The compiled code was nearly as fast
+as hand-written code, and within a few years most scientific programming in the world was
+done in FORTRAN. Backus later received the Turing Award, the ``Nobel prize'' of computing.
+\end{history}
+
+Fortran's design priorities have stayed the same for almost 70 years:
+\begin{enumerate}
+\item \textbf{Numerical performance.} The language is designed so that compilers can
+  optimise array loops aggressively. For example, Fortran assumes that two array arguments
+  of a subroutine do not overlap in memory (no \emph{aliasing}), which lets the compiler
+  vectorise loops that a C compiler must treat cautiously.
+\item \textbf{Arrays as first-class objects.} Multidimensional arrays, array slices and
+  whole-array arithmetic are built into the language, not added by a library.
+\item \textbf{Backward compatibility.} A FORTRAN 77 program from 1985 usually still compiles
+  today. This is why so much valuable, carefully validated engineering code is still in
+  use: rewriting it would be expensive and risky.
+\end{enumerate}
+
+The upper-case spelling FORTRAN is used for the versions up to FORTRAN 77; since Fortran 90
+the official name is written ``Fortran''.
+
+\section{Getting started}
+
+Install the free \code{gfortran} compiler (part of GCC): on Linux with the package
+manager, on macOS with Homebrew (\code{brew install gcc}), and on Windows through MSYS2,
+WSL, or the Intel oneAPI toolkit. The \emph{Fortran Package Manager} (\code{fpm}) and the
+website \url{https://fortran-lang.org} are good starting points. Online compilers such as
+Compiler Explorer (godbolt.org) let you try Fortran in a browser.
+\codefile{[08]Fortran}{fortran/hello.f90}{hello world}
+\begin{lstlisting}[style=shell]
+$ gfortran -o hello hello.f90
+$ ./hello
+\end{lstlisting}
+\outfile{fortran/hello.out}
+
+Every Fortran program starts with \code{program name} and ends with \code{end program
+name}. The statement \code{implicit none} should be the first line of every program unit.
+It switches off a historical rule (\term{implicit typing}) by which variables whose names
+began with the letters I to N were automatically integers and all others were reals. Under
+that rule a misspelt variable silently became a new variable --- a famous source of bugs.
+\code{print *,} writes values to the screen in a default (``list-directed'') format.
+
+Fortran is \emph{not case sensitive}: \code{PRINT}, \code{Print} and \code{print} are the
+same, and so are \code{Velocity} and \code{velocity}. Comments start with \code{!}. A
+statement that is too long for one line is continued with an ampersand \code{\&} at the end
+of the line.
+
+\section{Variables and types}
+
+All variables must be declared at the beginning of a program unit, before any executable
+statement:
+\begin{lstlisting}[language={[08]Fortran}]
+integer :: n_steps, i
+real    :: temperature              ! default real: usually single precision!
+real(8) :: pressure                 ! common but non-portable way to get double
+logical :: converged
+character(len=20) :: material
+complex :: z
+\end{lstlisting}
+The intrinsic types are \code{integer}, \code{real}, \code{complex}, \code{logical}
+(\code{.true.} or \code{.false.}) and \code{character}. Constants are declared with the
+\code{parameter} attribute and cannot be changed:
+\begin{lstlisting}[language={[08]Fortran}]
+real(dp), parameter :: g = 9.81_dp, pi = 4.0_dp * atan(1.0_dp)
+\end{lstlisting}
+
+\subsection*{Choose the precision with a kind parameter}
+\label{sec:fortran-kinds}
+
+The default \code{real} in Fortran is \emph{single precision} (about 7 digits). For
+engineering work you almost always want double precision. The portable way to ask for it
+is to define a \term{kind} parameter once and use it everywhere:
+\begin{lstlisting}[language={[08]Fortran}]
+integer, parameter :: dp = selected_real_kind(15, 307)   ! >= 15 digits, 10^307
+! or, equivalently on all common compilers:
+use, intrinsic :: iso_fortran_env, only: dp => real64
+real(dp) :: x
+x = 0.1_dp        ! the suffix _dp makes the literal double precision
+\end{lstlisting}
+
+\begin{pitfall}[Common pitfall: single-precision literals]
+In Fortran, \code{0.1} is a \emph{single-precision} constant even if you assign it to a
+double-precision variable. \code{x = 0.1} stores $0.100000001490116\ldots$, accurate to only
+7 digits. Always write \code{0.1\_dp} (or \code{0.1d0} in older code). This is one of the
+most common precision bugs in Fortran programs.
+\end{pitfall}
+
+\subsection*{Operators look like those of Python, with a few traps}
+
+Arithmetic uses \code{+ - * /} and \code{**} for powers, as in \py. Integer division
+truncates: \code{7/2} is \code{3}. Comparisons can be written in modern form
+(\code{== /= < <= > >=}) or in the old form (\code{.eq. .ne. .lt. .le. .gt. .ge.}); note
+that ``not equal'' is \code{/=}, not \code{!=}. Logical operators are \code{.and.},
+\code{.or.} and \code{.not.}. Strings are joined with \code{//}.
+
+Fortran has a rich set of \term{intrinsic} (built-in) functions: \code{sqrt}, \code{exp},
+\code{log}, \code{log10}, \code{sin}, \code{cos}, \code{tan}, \code{atan2}, \code{abs},
+\code{mod}, \code{min}, \code{max}, \code{nint} (nearest integer), \code{real} and
+\code{int} (conversions), and many array functions described below.
+
+\section{Control flow}
+
+\begin{lstlisting}[language={[08]Fortran}]
+! if / else if / else
+if (Re < 2300.0_dp) then
+    regime = "laminar"
+else if (Re < 4000.0_dp) then
+    regime = "transitional"
+else
+    regime = "turbulent"
+end if
+
+! counted loop: i = 1, 2, ..., 10 (the end value IS included)
+do i = 1, 10
+    total = total + 1.0_dp / i**2
+end do
+
+! loop with a step
+do i = 10, 1, -2        ! 10, 8, 6, 4, 2
+    print *, i
+end do
+
+! loop until a condition is met
+do
+    x = x - f(x) / df(x)
+    if (abs(f(x)) < 1.0e-12_dp) exit      ! exit = break
+end do
+
+! select case: a clean multi-way branch
+select case (n_dims)
+case (1)
+    print *, "line"
+case (2)
+    print *, "surface"
+case default
+    print *, "volume"
+end select
+\end{lstlisting}
+\code{exit} leaves a loop (like \code{break} in \py) and \code{cycle} jumps to the next
+iteration (like \code{continue}). Old code is full of \code{GOTO} statements and numbered
+labels; avoid them in new code.
+
+\section{Arrays}
+
+Arrays are where Fortran shines. By default, indices start at 1, but you may choose any
+range:
+\begin{lstlisting}[language={[08]Fortran}]
+real(dp) :: x(100)            ! x(1) ... x(100)
+real(dp) :: A(3, 3)           ! 3 x 3 matrix
+real(dp) :: v(0:40)           ! indices 0 ... 40
+real(dp), allocatable :: u(:) ! size decided at run time
+allocate(u(n))                ! ... and released automatically at the end of scope
+\end{lstlisting}
+Slices use the notation \code{start:end:stride}, and \emph{the end is included}:
+\code{x(2:6:2)} means $x_2, x_4, x_6$. Whole-array expressions work element by element,
+like NumPy or MATLAB, and array constructors use square brackets:
+\codefile{[08]Fortran}{fortran/arrays.f90}{whole-array operations}
+\outfile{fortran/arrays.out}
+Note the \code{reshape} call: because Fortran stores arrays in column-major order
+(Section~\ref{sec:rowcolumn}), the list of values fills the matrix \emph{column by
+column}. Here the matrix is symmetric, so it does not matter, but it often does when you
+pass arrays between Fortran and C or \py. Useful array intrinsics include \code{sum},
+\code{product}, \code{maxval}, \code{minval}, \code{maxloc}, \code{count}, \code{any},
+\code{all}, \code{size}, \code{shape}, \code{matmul}, \code{dot\_product},
+\code{transpose} and \code{reshape}. The \code{where} construct applies an assignment only
+where a mask is true:
+\begin{lstlisting}[language={[08]Fortran}]
+where (T > 100.0_dp)
+    phase = 1        ! vapour
+elsewhere
+    phase = 0        ! liquid
+end where
+\end{lstlisting}
+
+\section{Procedures: functions and subroutines}
+
+Fortran has two kinds of procedures. A \term{function} returns one value and is used in
+expressions. A \term{subroutine} returns nothing directly but can modify its arguments;
+it is invoked with \code{call}. Every argument should declare its \term{intent}:
+\code{in} (read only), \code{out} (written) or \code{inout} (both). The compiler then
+catches attempts to modify an input.
+\begin{lstlisting}[language={[08]Fortran}]
+subroutine stats(x, mean, std)
+    real(dp), intent(in)  :: x(:)          ! assumed-shape array
+    real(dp), intent(out) :: mean, std
+    integer :: n
+    n = size(x)
+    mean = sum(x) / n
+    std = sqrt(sum((x - mean)**2) / (n - 1))
+end subroutine stats
+
+! ... in the main program:
+call stats(yield_strength, m, s)
+\end{lstlisting}
+Unlike C or \py, Fortran passes arguments \emph{by reference}: the subroutine works on the
+caller's variable, not on a copy. This is efficient for large arrays and is why
+\code{intent} matters.
+
+Procedures marked \code{pure} have no side effects, and \code{elemental} procedures are
+written for scalars but automatically apply element by element to arrays, like a NumPy
+\emph{ufunc}. Procedures can be placed after a \code{contains} statement inside the main
+program (as in the drag example below) or, better, in a module.
+
+\section{Modules}
+
+A \term{module} groups constants, types and procedures that belong together, and controls
+what is visible from outside with \code{public} and \code{private}. Other program units
+access it with \code{use}. Modules also let the compiler check every call against the
+procedure's declared arguments, which catches many errors at compile time. The following
+example computes the deflection of a cantilever beam with an end load $P$,
+\[
+w(x) = \frac{P x^2 (3L - x)}{6EI},
+\]
+using an \code{elemental} function so that it works on a whole array of positions at once.
+\codefile{[08]Fortran}{fortran/beam_module.f90}{a module and an elemental function}
+\outfile{fortran/beam_module.out}
+The expression \code{[(L * k / 4.0\_dp, k = 0, 4)]} is an \term{implied-do} array
+constructor, Fortran's equivalent of a list comprehension. In a larger project each module
+lives in its own file, and the build system compiles modules before the files that use
+them.
+
+\section{Input and output}
+
+Fortran's I/O uses \emph{unit numbers} and \emph{format descriptors}. \code{write(*, fmt)}
+writes to the screen; \code{read(*, *)} reads from the keyboard. Format descriptors play
+the same role as the format specifications in \py's f-strings:
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Descriptor} & \textbf{Meaning} & \textbf{\py equivalent}\\
+\midrule
+\code{i5} & integer, width 5 & \code{\{n:5d\}}\\
+\code{f10.4} & fixed point, width 10, 4 decimals & \code{\{x:10.4f\}}\\
+\code{es12.4} & scientific notation & \code{\{x:12.4e\}}\\
+\code{a} & character string & \code{\{s\}}\\
+\code{3f8.2} & three reals & three fields\\
+\code{f0.4} & minimal width, 4 decimals & \code{\{x:.4f\}}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Files are opened with an explicit unit:
+\begin{lstlisting}[language={[08]Fortran}]
+integer :: u, ios, n
+real(dp) :: value, total
+open(newunit=u, file="yield.txt", status="old", action="read")
+total = 0.0_dp;  n = 0
+do
+    read(u, *, iostat=ios) value
+    if (ios /= 0) exit            ! end of file (or a read error)
+    total = total + value
+    n = n + 1
+end do
+close(u)
+print '(a, i0, a, f8.2)', "Read ", n, " values, mean = ", total / n
+\end{lstlisting}
+For large binary data sets, Fortran codes often use libraries such as HDF5 or NetCDF,
+which can also be read from \py.
+
+\section{Case study: the falling skydiver}
+
+\codefile{[08]Fortran}{fortran/drag.f90}{Euler solution of the drag equation}
+\begin{lstlisting}[style=shell]
+$ gfortran -O2 -Wall -o drag drag.f90
+$ ./drag
+\end{lstlisting}
+\outfile{fortran/drag.out}
+The numbers agree exactly with the \py output in Chapter~\ref{ch:python},
+as they must: both programs perform the same IEEE double-precision arithmetic in the same
+order. Points to notice:
+\begin{itemize}
+\item the kind parameter \code{dp} and the \code{\_dp} suffix on every literal;
+\item the array \code{v(0:n\_steps)} indexed from 0, so that \code{v(n)} is the speed at
+  time $n\,\Delta t$;
+\item the functions placed after \code{contains} can use the constants \code{m}, \code{c}
+  and \code{g} of the main program (\term{host association});
+\item \code{pure} functions with \code{intent(in)} arguments.
+\end{itemize}
+
+\section{Object-oriented and parallel Fortran}
+
+Fortran 2003 added \term{derived types} with type-bound procedures, inheritance
+(\code{extends}) and polymorphism:
+\begin{lstlisting}[language={[08]Fortran}]
+type :: pipe_t
+    real(dp) :: length, diameter
+contains
+    procedure :: area => pipe_area
+end type pipe_t
+...
+type(pipe_t) :: p
+p = pipe_t(12.0_dp, 0.05_dp)
+print *, p%area()            ! % selects a component, like . in Python
+\end{lstlisting}
+For parallel computing, Fortran codes typically use \textbf{OpenMP} (directives that
+split loops over the cores of one computer) and \textbf{MPI} (message passing between many
+computers in a cluster). Fortran 2008 also introduced \term{coarrays}, a parallel model
+built into the language itself, and \code{do concurrent}, which tells the compiler that
+loop iterations are independent:
+\begin{lstlisting}[language={[08]Fortran}]
+!$omp parallel do
+do i = 1, n
+    y(i) = a * x(i) + y(i)
+end do
+!$omp end parallel do
+\end{lstlisting}
+
+\section{Fortran and Python together}
+
+Many engineers use Fortran for the fast core of a calculation and \py for everything
+around it. Tools for connecting the two include:
+\begin{itemize}
+\item \textbf{f2py}, part of NumPy, which wraps Fortran subroutines so that they can be
+  imported as a \py module;
+\item Fortran's standard \code{iso\_c\_binding} module, which makes Fortran procedures
+  callable from C, and therefore from \py (via \code{ctypes} or \code{cffi}), Julia and
+  others;
+\item running a compiled Fortran program from \py with \code{subprocess} and reading its
+  output files --- the most common approach in practice.
+\end{itemize}
+
+\begin{engnote}[Engineering note: reading legacy code]
+You may be asked to modify a FORTRAN 77 program. Recognise its features: code starting in
+column 7 (columns 1--5 for labels, column 6 for continuation), comments marked by \code{C}
+or \code{*} in column 1, \code{COMMON} blocks for shared global data, \code{DO 10 I=1,N}
+loops ending at a labelled \code{10 CONTINUE}, \code{GOTO} jumps and implicit typing.
+Change as little as possible, add \code{IMPLICIT NONE} if you can, and above all build a
+set of test cases \emph{before} you change anything, so that you can show the results did
+not change.
+\end{engnote}
+
+\section{Strengths and weaknesses}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Strengths} & \textbf{Weaknesses}\\
+\midrule
+Excellent performance for numerical array code & Small community compared with \py or C++\\
+Arrays, slices and complex numbers built in & Weak string handling, few general-purpose libraries\\
+Very stable standard; decades-old code still compiles & Large amounts of old-style legacy code\\
+Mature parallel computing (OpenMP, MPI, coarrays) & Fewer modern tools (package manager is young)\\
+Simple language for formulas; hard to write very slow code & Not suited to user interfaces, web or embedded work\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Further reading}
+\begin{itemize}
+\item \url{https://fortran-lang.org} --- tutorials, the Fortran Package Manager and the
+  Fortran standard library project.
+\item M.~Metcalf, J.~Reid and M.~Cohen, \emph{Modern Fortran Explained: Incorporating
+  Fortran 2023}, Oxford University Press, 2023.
+\item M.~Curcic, \emph{Modern Fortran: Building Efficient Parallel Applications},
+  Manning, 2020.
+\item S.~J.~Chapman, \emph{Fortran for Scientists and Engineers}, 4th ed., McGraw-Hill,
+  2017.
+\end{itemize}
+
+\begin{exercises}
+\item Compile and run \file{drag.f90}. Then remove the \code{\_dp} suffix from the
+  constant \code{c = 0.25\_dp} and from \code{g = 9.81\_dp}. Does the output change? Explain
+  using the pitfall box in Section~\ref{sec:fortran-kinds}.
+\item Write a Fortran program that prints a table of temperatures from $-20$ to
+  $100\,^\circ$C in steps of 20 together with their values in Fahrenheit and kelvin, using
+  formatted output.
+\item Write a subroutine \code{stats(x, mean, std)} in a module and use it to compute the
+  mean and standard deviation of the values in \file{yield.txt}. Compare with the \py
+  result in Chapter~\ref{ch:python}.
+\item Use \code{matmul} to verify that the vector $\mathbf{x} = (1, -2, 3)$ solves the
+  system in \file{arrays.f90}. Then look up the LAPACK routine \code{dgesv} and try to call
+  it to solve the system (compile with \code{-llapack}).
+\item Translate this FORTRAN 77 fragment into modern Fortran:
+\begin{lstlisting}[language={[77]Fortran}]
+      DIMENSION X(100)
+      S = 0.0
+      DO 10 I = 1, N
+         S = S + X(I)**2
+   10 CONTINUE
+      RMS = SQRT(S/N)
+\end{lstlisting}
+  Which variables are integers and which are reals under implicit typing? Can you replace
+  the loop by a single array expression?
+\item Write a loop that sums the elements of a $2000\times2000$ matrix, once with the first
+  index in the inner loop and once with the second. Time both with \code{cpu\_time}. Which is
+  faster, and why?
+\end{exercises}

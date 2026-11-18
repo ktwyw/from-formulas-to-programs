@@ -1,0 +1,7 @@
+convection in h = 8.0 W/(m^2 K)               R = 0.01250 K/W
+plaster      L = 0.015 m, k = 0.500 W/(m K)   R = 0.00300 K/W
+brick        L = 0.250 m, k = 0.720 W/(m K)   R = 0.03472 K/W
+insulation   L = 0.100 m, k = 0.035 W/(m K)   R = 0.28571 K/W
+convection out h = 25.0 W/(m^2 K)             R = 0.00400 K/W
+Total R = 0.3399 K/W, U = 0.294 W/(m^2 K)
+Heat loss through 10 m^2 of wall: 132.4 W

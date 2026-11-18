@@ -1,0 +1,312 @@
+% =====================================================================
+\ProjectChapter{Installing and Running the Languages}{app:install}
+\setcounter{table}{0}\renewcommand{\thetable}{R\arabic{table}}
+% =====================================================================
+
+All languages in these notes except MATLAB and the full Mathematica can be installed for
+free on Windows, macOS and Linux. Table~\ref{tab:install} lists the recommended tools. On
+Windows, the \textbf{Windows Subsystem for Linux} (WSL) gives you a complete Ubuntu Linux
+environment in which every Linux command in these notes works unchanged; install it with
+\code{wsl --install} in an administrator PowerShell. On macOS, the package manager
+\textbf{Homebrew} (\url{https://brew.sh}) installs most tools with one command.
+
+\begin{table}[htbp]
+\centering
+\caption{Getting each language. ``Online'' lists a way to try the language in a web browser
+without installing anything.}
+\label{tab:install}
+\small
+\begin{tabularx}{\linewidth}{@{}l>{\RaggedRight\arraybackslash}X>{\RaggedRight\arraybackslash\ttfamily}p{3.9cm}>{\RaggedRight\arraybackslash}p{3.0cm}@{}}
+\toprule
+\textbf{Language} & \textbf{Install} & \normalfont\textbf{Ubuntu / WSL} & \textbf{Online}\\
+\midrule
+\py & Anaconda / Miniforge, python.org, uv & sudo apt install python3-pip & Google Colab, JupyterLite\\
+Fortran & gfortran (GCC), Intel oneAPI ifx, LFortran & sudo apt install gfortran & godbolt.org, play.fortran-lang.org\\
+C, C++ & GCC, Clang, Visual Studio (Windows), Xcode tools (macOS) & sudo apt install\newline build-essential & godbolt.org\\
+C\# & .NET SDK (dotnet.microsoft.com) & sudo apt install dotnet-sdk-8.0 & dotnetfiddle.net\\
+Java & Eclipse Temurin JDK (adoptium.net) & sudo apt install default-jdk & JDoodle, OneCompiler\\
+JavaScript & any web browser; Node.js (nodejs.org) & sudo apt install nodejs & browser console\\
+MATLAB & university licence (mathworks.com) & {\normalfont n/a} & MATLAB Online\\
+Octave & octave.org & sudo apt install octave & octave-online.net\\
+Wolfram & Mathematica (licence) or free Wolfram Engine & {\normalfont n/a} & Wolfram Cloud, Wolfram|Alpha\\
+R & cran.r-project.org + RStudio/Positron & sudo apt install r-base & posit.cloud, webR\\
+Julia & juliaup (julialang.org) & see julialang.org & JuliaHub\\
+Rust & rustup (rustup.rs) & see rustup.rs & play.rust-lang.org\\
+Go & go.dev/dl & sudo apt install golang & go.dev/play\\
+SQL (SQLite) & sqlite.org; built into \py & sudo apt install sqlite3 & sqliteonline.com\\
+Modelica & OpenModelica (openmodelica.org) & see website & n/a\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section*{One editor for everything}
+
+\textbf{Visual Studio Code} (\url{https://code.visualstudio.com}) is a free editor that
+supports every language in these notes through extensions: syntax highlighting, code
+completion, running and debugging, Jupyter notebooks, Git integration and remote work on
+WSL or a cluster. Install the extensions for \py, C/C++, Fortran (``Modern Fortran''), C\#,
+Java, Julia, R, Rust (``rust-analyzer'') and Go as you need them.
+
+\section*{Running the example programs}
+
+All example programs of these notes are in the folder \file{code/} of the repository,
+one sub-folder per language, together with the data files in \file{code/data/}. The
+commands used to compile and run the drag program in each language were:
+\begin{lstlisting}[style=shell]
+$ python3 drag.py                                 # Python
+$ gfortran -O2 -Wall -o drag drag.f90 && ./drag   # Fortran
+$ gcc -std=c11 -O2 -Wall -o drag drag.c -lm && ./drag     # C
+$ g++ -std=c++20 -O2 -Wall -o drag drag.cpp && ./drag     # C++
+$ mcs Drag.cs && mono Drag.exe                    # C# with Mono
+$ dotnet run Drag.cs                              # C# with .NET 10 or later
+$ java Drag.java                                  # Java 11 or later
+$ node drag.js                                    # JavaScript
+$ octave --eval drag                              # Octave; in MATLAB type: drag
+$ Rscript drag.R                                  # R
+$ julia drag.jl                                   # Julia
+$ rustc -O drag.rs && ./drag                      # Rust
+$ go run drag.go                                  # Go
+$ wolframscript -file drag.wl                     # Wolfram Language
+\end{lstlisting}
+The programs that read a data file look for it in the folder \file{code/data/}. In the
+programs this folder is written as \file{../data/}, so run each program from inside its
+own language folder. The programs of Chapter~\ref{ch:rosetta} are the exception: they read
+\file{yield.txt} from the current folder, and a copy of that file is kept in
+\file{code/rosetta/} for this purpose.
+
+To re-run every example at once and compare each output with the one printed in these
+notes, run the checking script from the top folder of the repository. Languages that are
+not installed on your computer are skipped.
+\begin{lstlisting}[style=shell]
+$ python3 tools/check_examples.py
+\end{lstlisting}
+
+% =====================================================================
+\ProjectChapter{Python Quick Reference}{app:pyref}
+% =====================================================================
+
+\section*{Basics}
+\begin{lstlisting}[language=Python]
+x = 3.0; n = 10; name = "steel"; ok = True; nothing = None
+type(x); int("3"); float("2.5"); str(42); round(3.14159, 2)
+7 / 2   # 3.5      7 // 2  # 3      7 % 2  # 1      2 ** 10  # 1024
+a == b; a != b; a < b <= c; x and y; x or y; not x
+print(f"{x:8.3f} {n:5d} {x:.2e} {name:>10s}")
+value = input("Prompt: ")          # always a string
+\end{lstlisting}
+
+\section*{Control flow}
+\begin{lstlisting}[language=Python]
+if x > 0:
+    ...
+elif x == 0:
+    ...
+else:
+    ...
+for i in range(n):          # 0 ... n-1
+for i in range(1, n + 1):   # 1 ... n
+for item in items:
+for i, item in enumerate(items):
+for a, b in zip(list_a, list_b):
+while condition:
+break; continue; pass
+result = "big" if x > 10 else "small"      # conditional expression
+\end{lstlisting}
+
+\section*{Collections}
+\begin{lstlisting}[language=Python]
+L = [1, 2, 3]; L.append(4); L.insert(0, 0); L.pop(); L.sort(); len(L)
+L[0]; L[-1]; L[1:3]; L[::-1]; 3 in L
+squares = [x**2 for x in range(10) if x % 2 == 0]
+t = (1, 2); a, b = t
+d = {"steel": 7850}; d["al"] = 2700; d.get("ti", 0); d.keys(); d.items()
+s = {1, 2, 3}; s.add(4); s & {2, 5}; s | {9}
+\end{lstlisting}
+
+\section*{Functions, classes, errors, files}
+\begin{lstlisting}[language=Python]
+def f(x, y=1.0, *args, **kwargs):
+    """Docstring."""
+    return x + y
+g = lambda x: x**2
+
+class Tank:
+    def __init__(self, volume):
+        self.volume = volume
+    def mass(self, rho):
+        return rho * self.volume
+
+try:
+    risky()
+except (ValueError, ZeroDivisionError) as err:
+    print("error:", err)
+finally:
+    cleanup()
+raise ValueError("message"); assert x > 0, "x must be positive"
+
+with open("data.txt") as f:            # "w" write, "a" append
+    for line in f:
+        values = [float(v) for v in line.split()]
+\end{lstlisting}
+
+\section*{NumPy, Matplotlib and SciPy}
+\begin{lstlisting}[language=Python]
+import numpy as np, matplotlib.pyplot as plt
+a = np.array([1., 2., 3.]); np.zeros((3, 3)); np.ones(5); np.eye(3)
+np.arange(0, 1, 0.1); np.linspace(0, 1, 11); np.random.default_rng(0).normal(size=5)
+a.shape; a.reshape(3, 1); a.T; a[a > 1]; A[1, :]; A[:, 0]
+a.sum(); a.mean(); a.std(ddof=1); a.max(); np.argmax(a); np.cumsum(a)
+np.sin(a); np.exp(a); np.sqrt(a); np.abs(a); np.isclose(a, b)
+A @ B; np.linalg.solve(A, b); np.linalg.eig(A); np.linalg.norm(a)
+np.loadtxt("f.txt"); np.savetxt("out.txt", a); np.genfromtxt("f.csv", delimiter=",")
+
+fig, ax = plt.subplots()
+ax.plot(x, y, "o-", label="data"); ax.set_xlabel("x (m)"); ax.legend()
+fig.savefig("plot.pdf")
+
+from scipy.optimize import brentq, fsolve, minimize, curve_fit
+from scipy.integrate import quad, solve_ivp
+from scipy.interpolate import interp1d
+\end{lstlisting}
+
+% =====================================================================
+\ProjectChapter{Numerical Functions Across Languages}{app:functions}
+% =====================================================================
+
+\begin{sidewaystable}
+\centering
+\caption{Common mathematical and numerical operations.}
+\small
+\setlength{\tabcolsep}{3pt}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}>{\bfseries}l>{\ttfamily}l>{\ttfamily}l>{\ttfamily}l>{\ttfamily}l>{\ttfamily}l@{}}
+\toprule
+ & \normalfont\bfseries \py & \normalfont\bfseries MATLAB & \normalfont\bfseries R & \normalfont\bfseries Julia & \normalfont\bfseries C / C++\\
+\midrule
+$\sqrt{x}$ & math.sqrt(x) & sqrt(x) & sqrt(x) & sqrt(x) & sqrt(x)\\
+$e^x$, $\ln x$ & math.exp, math.log & exp, log & exp, log & exp, log & exp, log\\
+$\log_{10} x$ & math.log10(x) & log10(x) & log10(x) & log10(x) & log10(x)\\
+$|x|$ & abs(x) & abs(x) & abs(x) & abs(x) & fabs(x) / std::abs\\
+$\pi$ & math.pi & pi & pi & pi, \textbackslash pi & M\_PI / std::numbers::pi\\
+$\operatorname{atan2}(y,x)$ & math.atan2(y, x) & atan2(y, x) & atan2(y, x) & atan(y, x) & atan2(y, x)\\
+round & round(x) & round(x) & round(x) & round(x) & round(x)\\
+remainder & x \% y & mod(x, y) & x \%\% y & mod(x, y) & fmod(x, y)\\
+sum & np.sum(a) & sum(a) & sum(a) & sum(a) & std::accumulate\\
+mean, std & np.mean, np.std(ddof=1) & mean, std & mean, sd & mean, std & (by hand)\\
+min, max & np.min, np.max & min, max & min, max & minimum, maximum & std::min\_element\\
+sort & np.sort(a) & sort(a) & sort(a) & sort(a) & std::sort\\
+cumulative sum & np.cumsum(a) & cumsum(a) & cumsum(a) & cumsum(a) & std::partial\_sum\\
+dot product & a @ b & dot(a, b) & sum(a*b) & dot(a, b) & std::inner\_product\\
+matrix product & A @ B & A*B & A \%*\% B & A*B & (Eigen) A*B\\
+transpose & A.T & A\textquotesingle{} & t(A) & A\textquotesingle{} & (Eigen) A.transpose()\\
+solve $A\mathbf{x}=\mathbf{b}$ & np.linalg.solve & A\textbackslash b & solve(A, b) & A\textbackslash b & (LAPACK / Eigen)\\
+eigenvalues & np.linalg.eigvals & eig(A) & eigen(A) & eigvals(A) & (LAPACK / Eigen)\\
+root of $f$ & scipy.optimize.brentq & fzero & uniroot & (Roots.jl) find\_zero & (GSL)\\
+integral & scipy.integrate.quad & integral & integrate & (QuadGK.jl) quadgk & (GSL)\\
+ODE & solve\_ivp & ode45 & deSolve::ode & (DiffEq.jl) solve & (Boost.Odeint)\\
+interpolate & np.interp & interp1 & approx & (Interpolations.jl) & {\normalfont n/a}\\
+polynomial fit & np.polyfit & polyfit & lm(y \textasciitilde\ poly(x, n)) & (Polynomials.jl) fit & {\normalfont n/a}\\
+random uniform & rng.random() & rand & runif(1) & rand() & std::uniform\_real\_distribution\\
+random normal & rng.normal() & randn & rnorm(1) & randn() & std::normal\_distribution\\
+read table & np.loadtxt, pd.read\_csv & readmatrix, readtable & read.csv & CSV.read & (by hand)\\
+\bottomrule
+\end{tabular}}
+\end{sidewaystable}
+
+\noindent In C and C++, include \code{<math.h>}/\code{<cmath>} for the mathematical functions.
+Fortran uses the same names as C for most intrinsics (\code{sqrt}, \code{exp}, \code{log},
+\code{log10}, \code{abs}, \code{atan2}, \code{mod}) plus array intrinsics (\code{sum},
+\code{maxval}, \code{matmul}, \code{dot\_product}, \code{transpose}).
+
+% =====================================================================
+\ProjectChapter{Glossary}{app:glossary}
+% =====================================================================
+
+\begin{description}[style=nextline,leftmargin=1.2em,font=\sffamily\bfseries]
+\item[Algorithm] A finite, precise sequence of steps that solves a problem.
+\item[API] Application programming interface: the set of functions, classes and
+  conventions through which one piece of software is used by another.
+\item[Array] An ordered collection of elements of the same type, accessed by index.
+\item[Assembly language] A human-readable form of machine code, specific to one processor
+  family.
+\item[Broadcasting] Combining arrays of different shapes by automatically extending the
+  smaller one (NumPy, Julia, MATLAB).
+\item[Bug] An error in a program. \textbf{Debugging} is finding and fixing it.
+\item[Bytecode] An intermediate, platform-independent code executed by a virtual machine
+  or interpreter.
+\item[Class] A blueprint for objects, defining their data and methods.
+\item[Column-major] Storing a matrix column by column in memory (Fortran, MATLAB, R,
+  Julia).
+\item[Compiler] A program that translates source code into machine code (or bytecode)
+  before the program runs.
+\item[Debugger] A tool that lets you pause a running program, step through it and inspect
+  variables.
+\item[Dynamic typing] Types belong to values and are checked while the program runs.
+\item[Exception] An object that signals a run-time error and can be caught and handled.
+\item[Floating-point number] A computer representation of a real number with a limited
+  number of significant digits (IEEE 754).
+\item[Function] A named, reusable block of code with inputs (parameters) and usually an
+  output (return value). Also called a procedure, subroutine or method.
+\item[Garbage collector] Part of a language runtime that automatically frees memory that is
+  no longer used.
+\item[Heap] The memory region for data whose size or lifetime is decided at run time.
+\item[IDE] Integrated development environment: editor, runner, debugger and other tools in
+  one program.
+\item[Immutable] Cannot be changed after creation (e.g.\ \py strings and tuples).
+\item[Inheritance] Defining a new class as an extension of an existing one.
+\item[Interpreter] A program that executes source code (or bytecode) directly, statement
+  by statement.
+\item[JIT compilation] Just-in-time compilation: translating code to machine code while
+  the program runs, just before it is needed.
+\item[Library] A collection of reusable, tested code (functions, classes) for a task.
+\item[Linker] A program that combines compiled object files and libraries into an
+  executable.
+\item[Literal] A value written directly in the code, such as \code{3.14} or
+  \code{"steel"}.
+\item[Machine epsilon] The gap between 1 and the next larger floating-point number;
+  $\approx 2.2\times10^{-16}$ in double precision.
+\item[Memory leak] Memory that a program allocates but never frees.
+\item[Method] A function that belongs to a class or object.
+\item[Module] A file or unit of code that groups related definitions and can be imported.
+\item[Multiple dispatch] Choosing which version of a function to run based on the types of
+  all its arguments (Julia).
+\item[Notebook] A document mixing executable code cells, results and text (Jupyter,
+  Mathematica, MATLAB Live Scripts, Pluto).
+\item[Object] A bundle of data and the methods that act on it; an instance of a class.
+\item[Off-by-one error] A loop or index that is one step too short or too long.
+\item[Operator overloading] Defining what operators such as \code{+} and \code{*} mean for
+  user-defined types.
+\item[Overflow] A result too large for the type that must hold it.
+\item[Package manager] A tool that installs libraries and their dependencies (\code{pip},
+  \code{conda}, CRAN, \code{npm}, Cargo, NuGet, Maven, Julia's Pkg).
+\item[Paradigm] A style of programming: imperative, procedural, object-oriented,
+  functional, declarative, array.
+\item[Pointer] A variable holding a memory address (C, C++, Fortran pointers).
+\item[Polymorphism] Code that works with objects of different types through a common
+  interface.
+\item[Profiling] Measuring where a program spends its time.
+\item[Recursion] A function that calls itself.
+\item[Reference] A name that refers to an object without copying it.
+\item[REPL] Read--evaluate--print loop: an interactive prompt.
+\item[Row-major] Storing a matrix row by row in memory (C, C++, \py/NumPy by default).
+\item[Runtime] The period when a program runs; also the support software a language needs
+  while running (JVM, .NET runtime).
+\item[Scope] The region of a program in which a name is visible.
+\item[Source code] The human-readable text of a program.
+\item[Stack] The memory region holding the local variables of active function calls.
+\item[Standard library] The library that comes with a language implementation.
+\item[Static typing] Types are attached to variables and checked before the program runs.
+\item[String] A sequence of characters (text).
+\item[Syntax] The grammar rules of a language.
+\item[Type] The kind of a value (integer, float, string, \ldots), which determines how it is
+  stored and what can be done with it.
+\item[Undefined behaviour] In C and C++, an operation whose result the language standard
+  does not define (e.g.\ reading outside an array); anything may happen.
+\item[Unicode, UTF-8] The universal character set and its most common byte encoding.
+\item[Variable] A name that refers to a value stored in memory.
+\item[Vectorisation] Expressing a computation as operations on whole arrays instead of
+  explicit loops; also the use of SIMD processor instructions.
+\item[Version control] Recording the history of changes to files (Git).
+\item[Virtual machine] Software that executes bytecode (JVM, .NET CLR).
+\end{description}
+

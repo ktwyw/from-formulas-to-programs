@@ -1,0 +1,4 @@
+c = 0.15 kg/m  ->  terminal velocity 72.3326 m/s  (saved in results/drag_c0.15.txt)
+c = 0.25 kg/m  ->  terminal velocity 56.0286 m/s  (saved in results/drag_c0.25.txt)
+c = 0.35 kg/m  ->  terminal velocity 47.3528 m/s  (saved in results/drag_c0.35.txt)
+Number of result files: 3

@@ -1,0 +1,353 @@
+% =====================================================================
+\BookChapter[The Wolfram Language]{The Wolfram Language: Computing with Symbols}
+\label{ch:wolfram}
+
+\begin{researchquestion}
+When should the computer manipulate the formula itself and not just numbers?
+\end{researchquestion}
+\OrientationNote
+% =====================================================================
+
+\begin{factsheet}{Wolfram Language}
+First appeared & 1988 as the language of Mathematica 1.0; named ``Wolfram Language'' in 2013; Mathematica 14 (2024)\\
+Designed by & Stephen Wolfram and Wolfram Research\\
+Paradigms & symbolic, functional, rule-based (term rewriting), with procedural constructs\\
+Typing & dynamic; everything is a symbolic \emph{expression}\\
+Execution & interpreted by the Wolfram kernel; numerical routines compiled\\
+File extensions & \file{.nb} (notebook), \file{.wl} and \file{.m} (packages and scripts)\\
+Cost & commercial; many universities have site licences. The Wolfram Engine is free for
+  developers, and Wolfram|Alpha uses the language on the web\\
+Used for & symbolic mathematics (algebra, calculus, differential equations), deriving and
+  checking formulas, teaching, physics, control theory, rapid prototyping, interactive
+  demonstrations\\
+Famous software & Mathematica, Wolfram|Alpha, the Wolfram Demonstrations Project, System
+  Modeler (Modelica)\\
+\end{factsheet}
+
+All the languages so far compute with \emph{numbers}. Ask \py for the derivative of
+$x^3 e^{-x}$ and it cannot help, unless you install a special library. The Wolfram
+Language computes with \emph{symbols}: it can expand, factor, differentiate and integrate
+formulas, solve equations exactly, and simplify expressions --- the things you do with pen
+and paper in a mathematics or mechanics course. For an engineer, a computer algebra system
+is the tool for deriving a formula, checking a hand derivation, or finding the exact
+solution of a model before writing a numerical code for the general case.
+
+\LearningOutcomes{Read Wolfram Language syntax; expand, solve, differentiate and integrate expressions symbolically; solve a differential equation exactly and numerically; recognise functional and rule-based programming; attach units to quantities; and check a symbolic result before relying on it.}
+
+\section{History and philosophy}
+
+\begin{history}
+Stephen Wolfram, a British physicist who received his PhD from Caltech at the age of 20,
+wrote a computer algebra system called SMP in 1979--81 for his particle-physics work.
+Dissatisfied with it, he founded Wolfram Research and released Mathematica in 1988. Its
+notebook interface --- documents that mix text, formulas, code, results and graphics ---
+was revolutionary and directly inspired today's Jupyter notebooks. In 2009 the company
+launched Wolfram|Alpha, a ``computational knowledge engine'' that answers questions typed
+in plain English using the same language underneath, and in 2013 the language itself was
+given its own name.
+\end{history}
+
+The language rests on one idea: \emph{everything is an expression}. A number, a formula, a
+list, a graphic, a piece of code and a document are all expressions of the form
+\code{head[arg1, arg2, \ldots]}. For example, $x + y^2$ is internally
+\code{Plus[x, Power[y, 2]]}. Computation means transforming expressions by applying
+rules, until no more rules apply. This makes symbolic and numeric work, programs and data
+all uniform. A second principle is that the language should contain as much built-in
+knowledge as possible: it has more than 6000 built-in functions and curated data about
+chemical elements, materials, units, physical constants, geography and much more.
+
+\section{Getting started}
+
+Mathematica runs on Windows, macOS and Linux, and in a web browser (Wolfram Cloud).
+Students at many universities get a licence through their institution. The free
+\textbf{Wolfram Engine} runs the language from scripts, Jupyter notebooks or \py, and
+\textbf{Wolfram|Alpha} (\url{https://www.wolframalpha.com}) accepts both English and
+Wolfram Language input.
+
+In a notebook you type an input and press \code{Shift+Enter}. Inputs are labelled
+\code{In[n]:=} and results \code{Out[n]=}:
+\begin{lstlisting}[language=Mathematica]
+In[1]:= Print["Hello, engineers!"]
+        Hello, engineers!
+In[2]:= 2 + 3
+Out[2]= 5
+In[3]:= 1/3 + 1/4
+Out[3]= 7/12
+In[4]:= N[%]          (* % is the last result; N gives a numerical value *)
+Out[4]= 0.583333
+In[5]:= N[Pi, 30]
+Out[5]= 3.14159265358979323846264338328
+\end{lstlisting}
+Notice that \code{1/3 + 1/4} gives the \emph{exact} fraction $7/12$: integers and fractions
+are kept exact unless you ask for a numerical approximation with \code{N} or include a
+decimal point (\code{1./3}). \code{N[Pi, 30]} shows that numbers can have arbitrary
+precision.
+
+\section{Syntax essentials}
+
+The syntax differs from every other language in these notes, so it is worth listing the
+conventions.
+\begin{itemize}
+\item Built-in functions start with a capital letter and are written in full:
+  \code{Sin}, \code{Exp}, \code{Integrate}, \code{Solve}, \code{Plot}. To avoid clashes,
+  give your own names a lower-case first letter.
+\item Function arguments go in \textbf{square brackets}: \code{Sin[x]}, not \code{Sin(x)}.
+  Round brackets are only for grouping.
+\item \textbf{Curly braces} make lists: \code{\{1, 2, 3\}}. Vectors are lists, and a
+  matrix is a list of lists. Parts are extracted with double square brackets:
+  \code{list[[2]]}. Indices start at 1.
+\item Multiplication can be written with a space: \code{2 x y} means $2xy$.
+  \code{x\^{}2} is a power.
+\item \code{=} assigns, \code{:=} defines a rule that is evaluated each time it is used,
+  \code{==} is an equation, and \code{->} is a replacement rule.
+\item A semicolon at the end of an input suppresses the output. Comments are written
+  \code{(* like this *)}.
+\item Built-in constants: \code{Pi}, \code{E}, \code{I} ($\sqrt{-1}$), \code{Infinity},
+  \code{Degree}.
+\end{itemize}
+
+\section{Symbolic mathematics}
+
+\subsection*{Algebra is done exactly}
+
+\begin{lstlisting}[language=Mathematica]
+In[1]:= Expand[(a + b)^3]
+Out[1]= a^3 + 3 a^2 b + 3 a b^2 + b^3
+In[2]:= Factor[x^2 - 3 x + 2]
+Out[2]= (-2 + x) (-1 + x)
+In[3]:= Solve[x^2 - 3 x + 2 == 0, x]
+Out[3]= {{x -> 1}, {x -> 2}}
+In[4]:= Solve[a x^2 + b x + c == 0, x]
+Out[4]= {{x -> (-b - Sqrt[b^2 - 4 a c])/(2 a)}, {x -> (-b + Sqrt[b^2 - 4 a c])/(2 a)}}
+In[5]:= Simplify[Sin[t]^2 + Cos[t]^2]
+Out[5]= 1
+\end{lstlisting}
+\code{Solve} returns a list of \term{replacement rules}. To use a solution, apply the rule
+with \code{/.} (``replace all''):
+\begin{lstlisting}[language=Mathematica]
+In[6]:= x^3 /. {x -> 2}
+Out[6]= 8
+In[7]:= vt = v /. Solve[m g == c v^2 && v > 0, v, Reals][[1]]
+\end{lstlisting}
+The last line asks for the positive speed at which drag balances weight, and the result is
+the familiar $\sqrt{gm}/\sqrt{c}$ (with conditions on the signs of the parameters, which the
+system reports carefully).
+
+\subsection*{Derivatives, integrals, limits and series are single commands}
+
+\begin{lstlisting}[language=Mathematica]
+In[1]:= D[x^3 Exp[-x], x]
+Out[1]= 3 E^-x x^2 - E^-x x^3
+In[2]:= Integrate[Sin[x]^2, x]
+Out[2]= x/2 - 1/4 Sin[2 x]
+In[3]:= Integrate[Exp[-x^2], {x, -Infinity, Infinity}]
+Out[3]= Sqrt[Pi]
+In[4]:= Limit[Sin[x]/x, x -> 0]
+Out[4]= 1
+In[5]:= Series[Tanh[x], {x, 0, 7}]
+Out[5]= x - x^3/3 + (2 x^5)/15 - (17 x^7)/315 + O[x]^8
+In[6]:= Sum[1/k^2, {k, 1, Infinity}]
+Out[6]= Pi^2/6
+\end{lstlisting}
+
+\subsection*{Some differential equations can be solved exactly}
+
+\code{DSolve} finds exact solutions of ordinary differential equations where they exist.
+For a damped harmonic oscillator, $\ddot x + 2\zeta\omega\dot x + \omega^2 x = 0$:
+\begin{lstlisting}[language=Mathematica]
+In[1]:= DSolve[{x''[t] + 2 z w x'[t] + w^2 x[t] == 0, x[0] == 1, x'[0] == 0}, x[t], t]
+\end{lstlisting}
+returns the general formula in terms of exponentials. For our drag problem,
+\begin{lstlisting}[language=Mathematica]
+In[2]:= sol = DSolve[{m v'[t] == m g - c v[t]^2, v[0] == 0}, v[t], t];
+In[3]:= FullSimplify[v[t] /. sol[[1]], {m > 0, g > 0, c > 0, t > 0}]
+\end{lstlisting}
+gives an expression equivalent to $\sqrt{mg/c}\,\tanh\!\big(t\sqrt{gc/m}\big)$, which is
+equation~\eqref{eq:dragexact} of the opening guide. This is exactly how one would \emph{derive}
+the exact solution that all our numerical programs were checked against. When no exact
+solution exists, \code{NDSolve} solves the equation numerically.
+
+\subsection*{Matrices of integers give exact answers}
+
+\begin{lstlisting}[language=Mathematica]
+In[1]:= A = {{4, -2, 1}, {-2, 4, -2}, {1, -2, 4}};
+In[2]:= LinearSolve[A, {11, -16, 17}]
+Out[2]= {1, -2, 3}
+In[3]:= Eigenvalues[A]
+Out[3]= {1/2 (9 + Sqrt[33]), 3, 1/2 (9 - Sqrt[33])}
+In[4]:= Det[A]
+Out[4]= 36
+In[5]:= MatrixForm[Inverse[A]]
+\end{lstlisting}
+Because the matrix contains integers, the eigenvalues come out \emph{exactly}; MATLAB gave
+the same values as decimals (Chapter~\ref{ch:matlab}). Symbolic matrices work too: you can
+compute the stiffness matrix of a beam element with symbolic length $L$ and modulus $E$.
+
+\section{Numerics and graphics}
+
+The Wolfram Language is also a capable numerical system:
+\begin{lstlisting}[language=Mathematica]
+In[1]:= FindRoot[x^3 - 2 x - 5, {x, 2}]
+Out[1]= {x -> 2.09455}
+In[2]:= NIntegrate[Sin[x], {x, 0, Pi}]
+Out[2]= 2.
+In[3]:= sol = NDSolve[{v'[t] == 9.81 - 0.25/80 v[t]^2, v[0] == 0}, v, {t, 0, 20}];
+In[4]:= v[10] /. sol
+Out[4]= {52.7496}
+In[5]:= Plot[Evaluate[v[t] /. sol], {t, 0, 20}, Frame -> True,
+             FrameLabel -> {"t (s)", "v (m/s)"}]
+\end{lstlisting}
+\code{Plot}, \code{ListPlot}, \code{Plot3D}, \code{ContourPlot} and \code{ParametricPlot}
+produce graphics that appear directly in the notebook. \code{Manipulate} creates an
+interactive demonstration with sliders in one line:
+\begin{lstlisting}[language=Mathematica]
+Manipulate[
+ Plot[Sqrt[m 9.81/c] Tanh[t Sqrt[9.81 c/m]], {t, 0, 20}, PlotRange -> {0, 130}],
+ {{m, 80}, 40, 120}, {{c, 0.25}, 0.05, 1}]
+\end{lstlisting}
+
+\section{Functional and rule-based programming}
+
+Wolfram Language code is typically \emph{functional}: instead of loops that modify
+variables, you apply functions to lists.
+\begin{lstlisting}[language=Mathematica]
+In[1]:= Table[k^2, {k, 1, 5}]
+Out[1]= {1, 4, 9, 16, 25}
+In[2]:= Map[Sqrt, {1, 4, 9}]          (* shorthand: Sqrt /@ {1, 4, 9} *)
+Out[2]= {1, 2, 3}
+In[3]:= Select[Range[20], PrimeQ]
+Out[3]= {2, 3, 5, 7, 11, 13, 17, 19}
+In[4]:= #^2 + 1 & /@ {1, 2, 3}        (* a pure (anonymous) function *)
+Out[4]= {2, 5, 10}
+In[5]:= Total[{3, 1, 4}]
+Out[5]= 8
+\end{lstlisting}
+In a pure function, \code{\#} stands for the argument and \code{\&} marks the end of the
+function, so \code{\#\^{}2 + 1 \&} is the counterpart of \py's \code{lambda x: x**2 + 1}.
+
+User functions are defined by \term{patterns}. The underscore in \code{x\_} means ``match
+any expression and call it \code{x}'':
+\begin{lstlisting}[language=Mathematica]
+terminalVelocity[m_, c_, g_ : 9.81] := Sqrt[m g/c]   (* g_ : 9.81 = default value *)
+terminalVelocity[80, 0.25]                           (* 56.0286 *)
+terminalVelocity[m, c]                               (* symbolic: 3.13209 Sqrt[m/c] *)
+\end{lstlisting}
+The same function works with numbers and with symbols. Patterns can also restrict the
+type of argument (\code{n\_Integer}) or add conditions, which allows definitions that look
+like mathematical case distinctions.
+
+\section{Case study: the falling skydiver}
+
+Here is the Euler method written in the functional style. \code{NestList[f, x0, n]} applies
+\code{f} repeatedly and returns the list $\{x_0, f(x_0), f(f(x_0)), \ldots\}$ --- exactly the
+sequence of Euler updates:
+\begin{lstlisting}[language=Mathematica,style=numbered]
+(* Falling object with quadratic drag: explicit Euler method *)
+m = 80.; c = 0.25; g = 9.81; dt = 0.5; tEnd = 20.;
+nSteps = Round[tEnd/dt];
+vt = Sqrt[m g/c];
+
+eulerStep[v_] := v + dt (g - c/m v^2);
+vEuler = NestList[eulerStep, 0., nSteps];   (* {v0, v1, ..., v40} *)
+times  = Range[0., tEnd, dt];
+vExact = vt Tanh[g times/vt];               (* listable: works on the whole list *)
+
+table = Transpose[{times, vEuler, vExact, vEuler - vExact}][[1 ;; -1 ;; 4]];
+Print[TableForm[table, TableHeadings -> {None, {"t (s)", "v_Euler", "v_exact", "error"}}]]
+Print["Terminal velocity: ", NumberForm[vt, {6, 4}], " m/s"]
+\end{lstlisting}
+Run in a Mathematica notebook, the program prints:
+\outfile[title={\footnotesize\sffamily\color{muted}Output (Mathematica notebook)}]{wolfram/drag.out}
+The numbers agree with the tables of the other chapters to all the digits shown. Only
+the appearance differs: by default the Wolfram Language shows six significant digits,
+drops trailing zeros, and writes a whole number such as 2 as \code{2.} to mark it as a
+decimal (not exact) value. The table is wrapped in
+\code{Print} so that it also appears when the file is run as a script with
+\code{wolframscript}; in a notebook, \code{TableForm} alone would be displayed. Note \code{[[1 ;; -1 ;; 4]]}, the
+Wolfram Language's slice notation (start, end, step), and that the arithmetic on
+\code{times} is applied element-wise automatically because \code{Tanh} and \code{*} are
+\emph{listable}. A procedural version with \code{Do} or \code{For} loops is also possible,
+but is considered poor style.
+
+\section{Units and data}
+
+The language has built-in physical units and curated data, which helps to avoid the
+Mars-Climate-Orbiter type of error (Chapter~\ref{ch:howcoderuns}):
+\begin{lstlisting}[language=Mathematica]
+In[1]:= N[UnitConvert[Quantity[60, "Miles"/"Hours"], "Meters"/"Seconds"]]
+Out[1]= 26.8224 m/s
+In[2]:= Quantity[80, "Kilograms"] Quantity[9.81, "Meters"/"Seconds"^2]
+Out[2]= 784.8 kg m/s^2
+In[3]:= UnitConvert[%, "Newtons"]
+Out[3]= 784.8 N
+ElementData["Iron", "Density"]              (* density of iron, with units *)
+Entity["Element", "Copper"]["ThermalConductivity"]
+\end{lstlisting}
+
+\section{Computer algebra in other languages}
+
+You do not need Mathematica to do symbolic mathematics:
+\begin{itemize}
+\item \textbf{SymPy} is a free \py library for symbolic mathematics. It covers much of the
+  same ground (\code{diff}, \code{integrate}, \code{solve}, \code{dsolve}, \code{series})
+  and can generate C, Fortran or NumPy code from formulas:
+\begin{lstlisting}[language=Python]
+import sympy as sp
+x = sp.symbols("x")
+sp.diff(x**3 * sp.exp(-x), x)          # -x**3*exp(-x) + 3*x**2*exp(-x)
+sp.integrate(sp.sin(x)**2, x)          # x/2 - sin(x)*cos(x)/2
+\end{lstlisting}
+\item \textbf{Maple} is a commercial computer algebra system popular in engineering
+  education and in some industries; \textbf{Maxima} is a free system with a long history.
+\item MATLAB's \textbf{Symbolic Math Toolbox} provides symbolic computation inside
+  MATLAB.
+\item Many graphing calculators include a computer algebra system.
+\end{itemize}
+
+\begin{engnote}[Engineering note: trust, but verify]
+Computer algebra is powerful but not infallible. Results may be correct only under
+assumptions you did not state (is $\sqrt{x^2} = x$? Only if $x \ge 0$), may be returned in
+an unrecognisable form, or may take forever. Always check a symbolic result: substitute
+numbers and compare with a numerical calculation, check limiting cases, and check the
+units.
+\end{engnote}
+
+\section{Strengths and weaknesses}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Strengths} & \textbf{Weaknesses}\\
+\midrule
+World-class symbolic mathematics & Commercial and proprietary\\
+Exact and arbitrary-precision arithmetic & Unusual syntax; code is hard for non-users to read\\
+Excellent notebooks, graphics and interactivity & Slower than compiled languages for large numerical loops\\
+Huge built-in function library with units and curated data & Small community outside science and education\\
+Very concise code & Hard to integrate into production software\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Further reading}
+\begin{itemize}
+\item S.~Wolfram, \emph{An Elementary Introduction to the Wolfram Language}, 3rd ed.,
+  Wolfram Media, 2023 (free online at \url{https://www.wolfram.com/language/elementary-introduction/}).
+\item The Wolfram Language documentation centre, \url{https://reference.wolfram.com}.
+\item The SymPy tutorial, \url{https://docs.sympy.org}.
+\end{itemize}
+
+\begin{exercises}
+\item Use Wolfram|Alpha or Mathematica to find the derivative and the indefinite integral
+  of $x^2\ln x$. Check the derivative by hand.
+\item Solve the drag ODE symbolically with \code{DSolve} (or with SymPy's \code{dsolve})
+  and confirm equation~\eqref{eq:dragexact}.
+\item The deflection curve of a simply supported beam with a uniform load $q$ satisfies
+  $EI\,w''''(x) = q$ with $w(0) = w(L) = 0$ and $w''(0) = w''(L) = 0$. Solve this with
+  \code{DSolve} and find the maximum deflection. Compare with $5qL^4/(384EI)$.
+\item Use \code{Series} to find the first three terms of the Taylor series of
+  $\sqrt{1+x}$ about $x = 0$. Where in engineering is this approximation used?
+\item Write the Newton iteration for $x^3 - 2x - 5 = 0$ using \code{NestList} and a pure
+  function. How many steps are needed from $x_0 = 2$?
+\item Repeat exercises 1 and 2 with SymPy in \py. Which do you find easier?
+\end{exercises}

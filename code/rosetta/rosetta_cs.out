@@ -1,0 +1,3 @@
+Newton:     root = 2.094551481542330 (5 iterations)
+Trapezoid:  integral = 1.999835503887440 (n = 100)
+Statistics: n = 10, mean = 276.850, std = 4.911

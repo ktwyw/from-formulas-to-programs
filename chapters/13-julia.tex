@@ -1,0 +1,276 @@
+% =====================================================================
+\BookChapter[Julia]{Julia: One Language for Prototype and Production}
+\label{ch:julia}
+
+\begin{researchquestion}
+Can a language be as easy to write as Python and as fast as C?
+\end{researchquestion}
+\OrientationNote
+% =====================================================================
+
+\begin{factsheet}{Julia}
+First appeared & 2012 (version 1.0 in 2018; version 1.13 in 2026)\\
+Designed by & Jeff Bezanson, Stefan Karpinski, Viral B.\ Shah and Alan Edelman, MIT\\
+Paradigms & multiple dispatch, functional, array, procedural; metaprogramming (macros)\\
+Typing & dynamic, with optional type annotations and a rich type system\\
+Execution & just-in-time compiled to native code (via LLVM), specialised per argument type\\
+File extension & \file{.jl}\\
+Cost & free and open source (MIT licence)\\
+Used for & scientific computing, differential equations, optimisation, scientific machine
+  learning, climate and ocean modelling, power systems, pharmacometrics, astronomy\\
+Famous software & DifferentialEquations.jl, JuMP (optimisation), Flux.jl, ModelingToolkit.jl,
+  Makie.jl, Oceananigans.jl (climate), PowerModels.jl\\
+\end{factsheet}
+
+Julia was created to solve what its authors called the \emph{two-language problem}.
+Scientists like to prototype in a convenient dynamic language (\py, MATLAB, R), but when
+the code must run fast they rewrite the core in C, C++ or Fortran. This is slow, error-prone
+and creates a barrier between the people who use code and the people who write it. Julia
+aims to be one language that is as easy to write as \py or MATLAB and as fast as C or
+Fortran. It largely succeeds.
+
+\LearningOutcomes{Explain the two-language problem; read Julia syntax, including Unicode names and the broadcast dot; explain why loops are fast in Julia and why the first call of a function is slow; define methods for your own types with multiple dispatch; and name the main Julia packages for engineering.}
+
+\section{History and philosophy}
+
+\begin{history}
+In 2009 four programmers --- Jeff Bezanson, Stefan Karpinski, Viral Shah and Alan
+Edelman, a professor of applied mathematics at MIT --- started working on a new language.
+Their 2012 blog post ``Why We Created Julia'' began: \emph{``We are greedy: we want more.''}
+They wanted the speed of C, the dynamism of Ruby, the mathematical notation of MATLAB, the
+general-purpose usefulness of \py, the statistics of R and the macros of Lisp. Julia 1.0,
+with a promise of a stable language, was released in 2018. In 2019 the creators received
+the Wilkinson Prize for Numerical Software.
+\end{history}
+
+Two ideas make Julia work:
+\begin{enumerate}
+\item \textbf{Just-in-time specialisation.} The first time a function is called with
+  arguments of particular types (say, two \code{Float64}s), Julia compiles a version of the
+  function specialised for exactly those types, using the LLVM compiler infrastructure
+  that also powers Clang and Rust. Later calls run that native code directly. Loops are
+  therefore fast; you do not need to vectorise to get speed.
+\item \textbf{Multiple dispatch.} A function can have many \emph{methods}, and Julia
+  chooses which one to run based on the types of \emph{all} its arguments. This turns out
+  to be a very natural way to organise mathematical code (Section~\ref{sec:dispatch}).
+\end{enumerate}
+
+\section{Getting started}
+
+Install Julia with \textbf{juliaup} from \url{https://julialang.org}. Start the
+interactive REPL by typing \code{julia}, or use VS Code with the Julia extension, Jupyter
+(the ``Ju'' in Jupyter stands for Julia) or Pluto.jl, a reactive notebook in which
+dependent cells update automatically.
+\begin{lstlisting}[language=Julia]
+julia> println("Hello, engineers!")
+Hello, engineers!
+
+julia> 2 + 3
+5
+
+julia> sqrt(80 * 9.81 / 0.25)
+56.02856414093976
+\end{lstlisting}
+The REPL has helpful modes: type \code{?} for help on a function, \code{]} for the package
+manager (e.g.\ \code{] add Plots}), and \code{;} for a shell.
+
+\section{The language in brief}
+
+Julia's syntax will look familiar after MATLAB and \py: blocks end with \code{end},
+indices start at 1, and comments start with \code{\#}.
+\begin{lstlisting}[language=Julia]
+g = 9.81                     # Float64
+n = 40                       # Int64
+material = "S275"            # String
+ok = true                    # Bool
+z = 3 + 4im                  # Complex
+r = 1//3 + 1//4              # Rational: 7//12 (exact)
+x = [1.0, 2.0, 3.0]          # Vector{Float64} (a column vector)
+A = [4 -2 1; -2 4 -2; 1 -2 4]  # Matrix{Int64}, MATLAB-style literal
+t = 0:0.5:20                 # a range (end included), stored compactly
+x[1], x[end], x[2:3]         # indexing from 1, `end` as in MATLAB
+\end{lstlisting}
+Julia accepts Unicode names, so code can look like the equations in a textbook. In the REPL
+or VS Code, type \code{\textbackslash alpha} and press Tab to get $\alpha$:
+\begin{lstlisting}[language=Julia]
+σ_y = 275e6                  # yield stress, Pa (type \sigma<Tab>_y)
+ε = σ_y / 210e9              # yield strain
+2π                           # juxtaposition: 2*pi = 6.283185307179586
+\end{lstlisting}
+(Writing a number directly in front of a variable, as in \code{2$\pi$} or \code{3x}, means
+multiplication.)
+
+\subsection*{Functions can be written the way mathematics writes them}
+
+\begin{lstlisting}[language=Julia]
+# Full form
+function reynolds(ρ, v, D, μ=1.0e-3)
+    return ρ * v * D / μ
+end
+
+# Short "mathematical" form for one-line functions
+area(d) = π * d^2 / 4
+
+# Anonymous function
+f = x -> x^3 - 2x - 5
+\end{lstlisting}
+
+\subsection*{A dot applies any function element by element}
+
+Julia makes element-wise operations explicit with a dot. Any function, including your own,
+can be applied element by element by writing a dot after its name, and operators get a dot
+in front:
+\begin{lstlisting}[language=Julia]
+d = [0.05, 0.08, 0.10]
+area.(d)                     # apply area to each element
+sin.(t) .+ 2 .* t.^2         # element-wise expression
+@. sin(t) + 2t^2             # the @. macro adds all the dots for you
+\end{lstlisting}
+Unlike MATLAB, where only built-in operators have element-wise versions, the dot syntax
+works for every function. And unlike NumPy, a chain of dotted operations is \emph{fused}
+into a single loop without temporary arrays, which makes it very fast.
+
+\section{Case study: the falling skydiver}
+
+\codefile{Julia}{julia/drag.jl}{Euler solution of the drag equation}
+\begin{lstlisting}[style=shell]
+$ julia drag.jl
+\end{lstlisting}
+\outfile[title={\footnotesize\sffamily\color{muted}Output (Julia 1.13)}]{julia/drag.out}
+The output is identical, character for character, to the table of the \py, C and
+Fortran chapters: the program performs the same double-precision operations in the same
+order. The function \code{euler} is generic: it takes
+the right-hand side \code{f} as an argument, like SciPy's solvers. \code{@printf} is a
+\term{macro} (macros start with \code{@}); it generates fast formatting code at compile
+time. The \code{const} declarations tell the compiler that these global values will not
+change, which matters for performance.
+
+\section{Speed: loops are fine}
+
+In \py or MATLAB you are told to avoid loops. In Julia a plain loop is as fast as C:
+\begin{lstlisting}[language=Julia]
+function sum_of_squares(x)
+    s = zero(eltype(x))      # zero of the right type (0.0 for Float64)
+    for xi in x
+        s += xi^2
+    end
+    return s
+end
+
+x = rand(10^7)
+@time sum_of_squares(x)      # first call: includes compilation
+@time sum_of_squares(x)      # second call: compiled machine code, a few milliseconds
+\end{lstlisting}
+The first call takes longer because Julia compiles the function. This compilation delay,
+sometimes called ``time to first plot'', has been greatly reduced in recent versions by
+caching compiled code, but it is still noticeable when loading large packages. Julia is
+therefore best for work sessions in which you run many calculations, rather than for tiny
+scripts started thousands of times.
+
+\section{Types and multiple dispatch}
+\label{sec:dispatch}
+
+You can define your own types with \code{struct} and give a function different methods
+for different argument types:
+\begin{lstlisting}[language=Julia]
+abstract type Section end
+
+struct Rectangle <: Section     # <: means "is a subtype of"
+    b::Float64
+    h::Float64
+end
+
+struct Circle <: Section
+    d::Float64
+end
+
+area(s::Rectangle) = s.b * s.h
+area(s::Circle)    = π * s.d^2 / 4
+second_moment(s::Rectangle) = s.b * s.h^3 / 12
+second_moment(s::Circle)    = π * s.d^4 / 64
+
+sections = [Rectangle(0.05, 0.10), Circle(0.08)]
+for s in sections
+    println(typeof(s), ": A = ", area(s), ", I = ", second_moment(s))
+end
+\end{lstlisting}
+\outfile[title={\footnotesize\sffamily\color{muted}Output (Julia 1.13)}]{julia/sections.out}
+The numbers agree with the C++ program of Chapter~\ref{ch:cpp}. \code{println} shows
+every significant digit, so the rounding error of Section~\ref{sec:floatingpoint} becomes
+visible: $0.05 \times 0.10$ is stored as \code{0.005000000000000001}, because neither factor
+is exact in binary. \py prints exactly the same digits.
+This looks like the C++ example of Chapter~\ref{ch:cpp}, but the methods are not owned by
+the classes: \code{area} is one function with several methods, and anyone can add a new
+method for a new type, or a new function for existing types, without modifying the
+original code. Dispatch on \emph{several} arguments is what makes this powerful: for
+example, Julia's \code{*} has different methods for (scalar, matrix), (sparse matrix,
+vector), (diagonal matrix, diagonal matrix) and so on, each with the best algorithm, and
+the right one is chosen automatically. Packages written by different people combine
+remarkably well because of this.
+
+\section{Packages for engineers}
+
+Julia's package manager is built in (\code{using Pkg; Pkg.add("Plots")}), and every project
+can record its exact package versions in \file{Project.toml} and \file{Manifest.toml},
+which makes results reproducible. Highlights for engineering:
+\begin{itemize}
+\item \textbf{DifferentialEquations.jl}: one of the most complete ODE/SDE/DAE solver suites
+  in any language;
+\item \textbf{ModelingToolkit.jl}: equation-based, acausal modelling of physical systems
+  (similar to Modelica), with automatic simplification and code generation;
+\item \textbf{JuMP}: a modelling language for mathematical optimisation (linear,
+  mixed-integer, nonlinear), widely used in power systems and operations research;
+\item \textbf{Plots.jl} and \textbf{Makie.jl}: plotting; \textbf{DataFrames.jl}: tables;
+\item \textbf{Unitful.jl}: physical units checked at compile time with no run-time cost;
+\item \textbf{ForwardDiff.jl}, \textbf{Enzyme.jl}: automatic differentiation of Julia
+  code;
+\item \textbf{CUDA.jl}: running Julia code on NVIDIA GPUs.
+\end{itemize}
+Here is the drag problem solved with DifferentialEquations.jl:
+\begin{lstlisting}[language=Julia]
+using DifferentialEquations, Plots
+m, c, g = 80.0, 0.25, 9.81
+f(v, p, t) = g - c / m * v^2
+prob = ODEProblem(f, 0.0, (0.0, 20.0))
+sol = solve(prob, Tsit5(), reltol=1e-10, abstol=1e-10)   # both tolerances
+sol(10.0)                      # 52.7496... (the solution is a continuous function)
+plot(sol, xlabel="t (s)", ylabel="v (m/s)", label="v(t)")
+\end{lstlisting}
+
+\section{Strengths and weaknesses}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Strengths} & \textbf{Weaknesses}\\
+\midrule
+Speed of compiled languages with dynamic-language convenience & Compilation delay on first use\\
+Mathematical syntax (Unicode, MATLAB-like arrays) & Smaller community and job market than \py\\
+Multiple dispatch: highly composable packages & Some packages less mature or less documented\\
+Excellent differential-equation and optimisation libraries & Error messages involving types can be long\\
+Free; built-in reproducible package management & Fewer engineers know it, so sharing code can be harder\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Further reading}
+\begin{itemize}
+\item The official documentation and learning resources, \url{https://julialang.org/learning/}.
+\item B.~Lauwens and A.~B.~Downey, \emph{Think Julia}, O'Reilly, 2019 (free online).
+\item The ``Modern Julia Workflows'' guide, \url{https://modernjuliaworkflows.github.io}.
+\item C.~Rackauckas, \emph{Parallel Computing and Scientific Machine Learning} (MIT
+  course notes, free online).
+\end{itemize}
+
+\begin{exercises}
+\item Install Julia and run \file{drag.jl}. Compare the output with the \py table.
+\item Write a function \code{newton(f, df, x0; tol=1e-12)} that implements Newton's method
+  and test it on $x^3 - 2x - 5 = 0$. (The semicolon introduces \emph{keyword} arguments.)
+\item Time \code{sum\_of\_squares} and \code{sum(x.\^{}2)} for $10^7$ random numbers. Then time
+  the equivalent pure-\py loop and the NumPy expression. Comment on the results.
+\item Add a \code{Tube} type to the cross-section example and define \code{area} and
+  \code{second\_moment} methods for it. Did you have to change any existing code?
+\item Use \code{Unitful.jl} to compute the terminal velocity with units attached, and
+  check that the result is in m/s. What happens if you accidentally give the mass in grams?
+\end{exercises}

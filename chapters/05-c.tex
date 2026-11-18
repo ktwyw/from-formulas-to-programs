@@ -1,0 +1,358 @@
+% =====================================================================
+\BookChapter[C]{C: Close to the Machine}
+\label{ch:c}
+
+\begin{researchquestion}
+What does a programmer gain, and risk, by controlling memory directly?
+\end{researchquestion}
+\OrientationNote
+% =====================================================================
+
+\begin{factsheet}{C}
+First appeared & 1972; standards C89/C90, C99, C11, C17, C23\\
+Designed by & Dennis Ritchie, Bell Labs (with Ken Thompson)\\
+Paradigms & imperative, procedural\\
+Typing & static, fairly weak (many implicit conversions)\\
+Execution & compiled to native code\\
+File extensions & \file{.c} (source), \file{.h} (header)\\
+Compilers & GCC, Clang/LLVM, Microsoft Visual C++, many for microcontrollers\\
+Used for & operating systems, embedded systems and microcontrollers, device drivers,
+  firmware, real-time control, high-performance libraries, interpreters of other languages\\
+Famous software & Linux and Windows kernels, the CPython interpreter, SQLite, Git, the
+  firmware in most cars, appliances and medical devices, FFTW, GSL\\
+\end{factsheet}
+
+C is the language the modern computing world is built on. Your operating system, the \py
+interpreter you use every day, the firmware in your washing machine and the engine control
+unit of a car are all written mostly in C. C gives the programmer direct access to memory
+and almost no protection from mistakes. It is small, fast and portable, and it runs on
+everything from an 8-bit microcontroller costing less than a dollar to a supercomputer.
+
+\LearningOutcomes{Compile, link and run a C program; declare variables of fixed types and predict the result of integer arithmetic; use pointers to pass data to functions; allocate and free memory; group data in a structure; explain what a buffer overflow is; and describe how C is used in embedded systems.}
+
+\section{History and philosophy}
+
+\begin{history}
+Ken Thompson and Dennis Ritchie created the Unix operating system at Bell Labs around 1970.
+At first Unix was written in assembly language, which tied it to one computer. Ritchie
+designed C (a successor to Thompson's language B) so that Unix could be rewritten in a
+high-level language, and by 1973 most of the Unix kernel was in C. Because the kernel was
+now portable, Unix spread to many kinds of computers --- and C spread with it. The book
+\emph{The C Programming Language} by Kernighan and Ritchie (1978), known as ``K\&R'',
+started the tradition of the ``Hello, world'' program.
+\end{history}
+
+C's philosophy is often summarised as ``trust the programmer''. The language does exactly
+what you say, quickly, and assumes you know what you are doing. It does not check array
+bounds, it does not initialise variables for you, and it does not collect garbage. This
+makes C extremely efficient and predictable --- important for real-time and embedded
+systems --- but also makes it easy to write programs with subtle and dangerous errors.
+
+\section{Getting started}
+
+On Linux and macOS a C compiler (\code{gcc} or \code{clang}) is usually installed or easy
+to install. On Windows, install Visual Studio (Community edition), MSYS2, or use WSL. The
+basic workflow is edit $\to$ compile $\to$ run:
+\codefile{C}{c/hello.c}{hello world}
+\begin{lstlisting}[style=shell]
+$ gcc -std=c11 -Wall -Wextra -o hello hello.c
+$ ./hello
+\end{lstlisting}
+\outfile{c/hello.out}
+Line by line:
+\begin{itemize}
+\item \code{\#include <stdio.h>} is a \term{preprocessor} directive. It pastes in the
+  \term{header file} that declares the standard input/output functions such as
+  \code{printf}.
+\item \code{int main(void)} defines the function where every C program starts. It returns
+  an integer to the operating system: \code{0} means success.
+\item Statements end with a semicolon \code{;} and blocks are enclosed in braces
+  \code{\{ \}}. Indentation is for humans only.
+\item \code{printf} prints formatted text. \code{\%d} is replaced by an integer, and
+  \code{\textbackslash n} is a newline.
+\end{itemize}
+Always compile with warnings switched on (\code{-Wall -Wextra}). The C compiler accepts
+many programs that are almost certainly wrong; the warnings tell you about them.
+
+\section{Variables and types}
+
+Every variable must be declared with a type before use:
+\begin{lstlisting}[language=C]
+int    n_steps = 40;          /* integer, usually 32 bits          */
+long   count = 0L;            /* at least 32 bits                  */
+float  t_single = 1.5f;       /* single precision (about 7 digits) */
+double pressure = 101325.0;   /* double precision (about 16 digits)*/
+char   grade = 'A';           /* one character (a small integer)   */
+_Bool  done = 0;              /* or 'bool' with #include <stdbool.h> */
+const double g = 9.81;        /* cannot be changed                 */
+\end{lstlisting}
+The exact sizes of \code{int} and \code{long} depend on the platform. When the size
+matters (in embedded systems, file formats and communication protocols it always does),
+include \code{<stdint.h>} and use the fixed-width types \code{int8\_t}, \code{uint16\_t},
+\code{int32\_t}, \code{uint64\_t} and so on.
+
+\begin{pitfall}[Common pitfall: uninitialised variables]
+In C, a local variable that is declared but not assigned contains whatever bits happened
+to be in that memory --- ``garbage''. \code{double sum; for (\ldots) sum += x[i];} may give
+a different wrong answer every time you run it. Always initialise: \code{double sum = 0.0;}.
+\end{pitfall}
+
+\subsection*{There is no power operator, and integer division truncates}
+
+C has the familiar arithmetic operators \code{+ - * /} and the remainder \code{\%}, but no
+power operator: use \code{pow(x, y)} from \code{<math.h>}, or simply \code{x*x} for a
+square. Integer division truncates toward zero, so \code{7/2} is \code{3} and
+\code{1/3*3.0} is \code{0.0}! Write \code{1.0/3.0} when you mean real division.
+
+C introduced shorthand that many later languages copied: \code{x += 2} means
+\code{x = x + 2}, and \code{i++} increases \code{i} by one. Comparisons are
+\code{== != < <= > >=}; logical operators are \code{\&\&} (and), \code{||} (or) and
+\code{!} (not). In C, any non-zero value counts as ``true'' and zero as ``false''.
+
+\begin{pitfall}[Common pitfall: \texttt{=} versus \texttt{==}]
+\code{if (x = 0)} \emph{assigns} 0 to \code{x} and then tests the result, which is
+false, so the block never runs. You meant \code{if (x == 0)}. Compiler warnings catch
+this; another reason to always use \code{-Wall}.
+\end{pitfall}
+
+The mathematical library \code{<math.h>} provides \code{sqrt}, \code{pow}, \code{exp},
+\code{log}, \code{log10}, \code{sin}, \code{cos}, \code{tan}, \code{atan2}, \code{fabs},
+\code{floor}, \code{ceil}, \code{fmod}, \code{hypot}, \code{tanh} and more. On Linux you
+must link it explicitly with \code{-lm}.
+
+\section{Control flow}
+
+The control structures of C were copied by C++, Java, C\#, JavaScript and many others, so
+it is worth learning them once:
+\begin{lstlisting}[language=C]
+if (Re < 2300.0) {
+    printf("laminar\n");
+} else if (Re < 4000.0) {
+    printf("transitional\n");
+} else {
+    printf("turbulent\n");
+}
+
+/* for (initialisation; condition; update) */
+for (int i = 0; i < 10; i++) {
+    sum += 1.0 / ((i + 1.0) * (i + 1.0));
+}
+
+while (fabs(step) > 1e-12) {
+    step = f(x) / dfdx(x);
+    x -= step;
+}
+
+do {                       /* body runs at least once */
+    printf("Enter a positive number: ");
+    scanf("%lf", &x);
+} while (x <= 0.0);
+
+switch (n_dims) {
+    case 1:  printf("line\n");    break;
+    case 2:  printf("surface\n"); break;
+    default: printf("volume\n");
+}
+\end{lstlisting}
+The C \code{for} loop is more general than \py's: it is really a \code{while} loop with
+an initialisation and an update written at the top. The loop \code{for (i = 0; i < n;
+i++)} runs for $i = 0, 1, \ldots, n-1$, exactly like \code{for i in range(n)}.
+\code{break} and \code{continue} work as in \py. In a \code{switch}, forgetting
+\code{break} makes execution ``fall through'' into the next case.
+
+\section{Functions}
+
+A function declares the types of its parameters and of its return value
+(\code{void} if it returns nothing):
+\begin{lstlisting}[language=C]
+double terminal_velocity(double m, double c, double g)
+{
+    return sqrt(m * g / c);
+}
+\end{lstlisting}
+A function must be declared before it is used. In larger programs the declarations
+(\term{prototypes}) are collected in a header file, for example \file{fluids.h},
+\begin{lstlisting}[language=C]
+/* fluids.h */
+double reynolds(double rho, double v, double D, double mu);
+double friction_factor(double Re, double rel_roughness);
+\end{lstlisting}
+and the definitions are in \file{fluids.c}. Other files \code{\#include "fluids.h"} and
+the linker joins everything together (Figure~\ref{fig:compile}).
+
+C passes arguments \emph{by value}: the function receives copies. To let a function
+change a variable of the caller, you pass the variable's \emph{address} --- which brings us
+to pointers.
+
+\section{Pointers and memory}
+
+A \term{pointer} is a variable that stores a memory address. Pointers are the most
+powerful and the most dangerous feature of C, and they are the main reason C is both fast
+and error-prone.
+\begin{itemize}
+\item \code{\&x} is the address of \code{x};
+\item \code{double *p} declares \code{p} as a pointer to a \code{double};
+\item \code{*p} is the value stored at the address in \code{p} (``dereferencing'').
+\end{itemize}
+\codefile{C}{c/pointers.c}{pointers and arrays}
+\outfile[title={\footnotesize\sffamily\color{muted}Output (the addresses differ from run to run)}]{c/pointers.out}
+The last line shows that consecutive array elements are 8 bytes apart in memory (\code{e40}
+and \code{e48} in hexadecimal): a \code{double} occupies 8 bytes. In C an array is just a
+block of consecutive memory, and the array name behaves as a pointer to its first element.
+This is why \code{x[i]} and \code{*(x + i)} are the same thing, and why a function cannot
+find out the length of an array passed to it: it receives only the starting address.
+
+\begin{pitfall}[Common pitfall: buffer overflows]
+C does not check array bounds. If \code{double a[10];} and you write \code{a[10] = 1.0;},
+you overwrite whatever lies after the array in memory --- another variable, or the
+function's return address. The program may crash, give wrong results, or appear to work.
+Such \term{buffer overflows} are the cause of a large fraction of all security
+vulnerabilities in software, which is why governments and industry now encourage
+\emph{memory-safe} languages (Rust, Go, Java, C\#, \py) for new projects.
+\end{pitfall}
+
+\subsection*{Memory requested at run time must be given back}
+
+Arrays declared as \code{double a[100];} have a size fixed when the program is compiled.
+When the size is known only at run time --- for example, the number of lines in a data
+file --- you request memory from the heap with \code{malloc} and release it with
+\code{free}. The next program reads an unknown number of values from a file into an array
+that doubles its capacity whenever it is full (exactly what a \py list does internally),
+and computes statistics. It also shows a \code{struct}, C's way of grouping related values.
+\codefile{C}{c/readstats.c}{reading a file into a dynamic array}
+\begin{lstlisting}[style=shell]
+$ gcc -std=c11 -Wall -o readstats readstats.c -lm
+$ ./readstats ../data/yield.txt
+\end{lstlisting}
+\outfile{c/readstats.out}
+Compare this with the short \py program \file{read\_csv.py} in Chapter~\ref{ch:python}, which does a similar job.
+The C version is longer because it does by hand what \py does automatically: managing
+memory, checking that the file exists, and growing the array. In return, it uses exactly as
+much memory as needed and runs on a system with no operating system at all.
+
+\section{Structures}
+
+A \code{struct} groups values of different types under one name, like a \py class without
+methods:
+\begin{lstlisting}[language=C]
+typedef struct {
+    char   name[32];
+    double density;          /* kg/m^3 */
+    double youngs_modulus;   /* Pa     */
+} Material;
+
+Material steel = {"S275", 7850.0, 210e9};
+printf("%s: E = %.0f GPa\n", steel.name, steel.youngs_modulus / 1e9);
+
+Material *pm = &steel;
+pm->density = 7860.0;        /* -> accesses a member through a pointer */
+\end{lstlisting}
+Structures are the C programmer's tool for building data structures: records, linked lists,
+trees, and the ``objects'' that C++ later formalised.
+
+\section{Input and output}
+
+\code{printf} and its relatives use \term{format specifiers}: \code{\%d} (int),
+\code{\%ld} (long), \code{\%zu} (size), \code{\%f}, \code{\%e} and \code{\%g} (double),
+\code{\%s} (string), \code{\%c} (character), \code{\%p} (pointer). Width and precision go
+between \code{\%} and the letter: \code{\%10.4f}. \py's f-string format codes come
+directly from these. Reading uses \code{scanf} and \code{fscanf}; note that for a
+\code{double} the reading format is \code{\%lf} but the printing format is \code{\%f}.
+
+Files are handled through a \code{FILE *} pointer: \code{fopen}, \code{fprintf},
+\code{fscanf}, \code{fgets}, \code{fclose}. Always check whether \code{fopen} returned
+\code{NULL}.
+
+\section{Case study: the falling skydiver}
+
+\codefile{C}{c/drag.c}{Euler solution of the drag equation}
+\begin{lstlisting}[style=shell]
+$ gcc -std=c11 -O2 -Wall -o drag drag.c -lm
+$ ./drag
+\end{lstlisting}
+\outfile{c/drag.out}
+Again identical to \py and Fortran. The array size is a compile-time constant
+(\code{\#define N\_STEPS 40}), which is typical of embedded C, where dynamic memory is often
+forbidden. \code{v * v} is used instead of \code{pow(v, 2)}, a common and slightly faster
+idiom.
+
+\section{C in embedded systems}
+
+Most C code in the world does not run on PCs but on \term{microcontrollers}: tiny
+computers on a single chip that control motors, read sensors and run machines. An Arduino
+board is a friendly introduction; its ``sketches'' are C++ but look almost like C. The
+following program for an Arduino reads a temperature sensor and switches a fan on and off
+with \term{hysteresis}, so that the fan does not chatter around the set point:
+\begin{lstlisting}[language=C]
+const int SENSOR_PIN = A0;
+const int FAN_PIN = 9;
+const float T_ON = 30.0, T_OFF = 27.0;   /* degrees C */
+int fan_on = 0;
+
+void setup() {
+    pinMode(FAN_PIN, OUTPUT);
+    Serial.begin(9600);
+}
+
+void loop() {                             /* called again and again, forever */
+    int raw = analogRead(SENSOR_PIN);     /* 0 ... 1023 */
+    float volts = raw * 5.0 / 1023.0;
+    float T = (volts - 0.5) * 100.0;      /* TMP36 sensor: 10 mV per degree */
+    if (!fan_on && T > T_ON)  fan_on = 1;
+    if (fan_on && T < T_OFF)  fan_on = 0;
+    digitalWrite(FAN_PIN, fan_on ? HIGH : LOW);
+    Serial.println(T);
+    delay(500);                           /* wait 0.5 s */
+}
+\end{lstlisting}
+Embedded C has its own rules: memory is measured in kilobytes, there may be no
+floating-point hardware, timing must be predictable, and the program must never crash.
+Safety-critical industries use coding standards such as \textbf{MISRA C} (automotive) that
+forbid the most error-prone features of the language.
+
+\section{Strengths and weaknesses}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Strengths} & \textbf{Weaknesses}\\
+\midrule
+Very fast; small and predictable executables & No protection against memory errors\\
+Runs on every processor ever made & Manual memory management\\
+Direct access to hardware and memory & Verbose for numerical work; no built-in arrays of variable size or matrices\\
+Small language that can be learnt completely & Weak string handling\\
+Stable; the common language that other languages call (the ``C ABI'') & Undefined behaviour: some errors have no defined result at all\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Further reading}
+\begin{itemize}
+\item B.~W.~Kernighan and D.~M.~Ritchie, \emph{The C Programming Language}, 2nd ed.,
+  Prentice Hall, 1988.
+\item K.~N.~King, \emph{C Programming: A Modern Approach}, 2nd ed., Norton, 2008.
+\item J.~Gustedt, \emph{Modern C}, Manning (the current edition covers C23; a free version is online).
+\item W.~H.~Press et al., \emph{Numerical Recipes in C}, 2nd ed., Cambridge University
+  Press, 1992 --- the classic collection of numerical algorithms.
+\end{itemize}
+
+\begin{exercises}
+\item Compile \file{drag.c} without \code{-lm}. What error do you get, and at which stage
+  (compiling or linking)?
+\item What do the following expressions evaluate to in C? \code{7/2}, \code{7.0/2},
+  \code{7/2*2.0}, \code{(double)7/2}, \code{-7/2}, \code{-7\%2}. Check with a short program.
+\item Write a C function \code{void polar(double x, double y, double *r, double *theta)}
+  that returns the polar coordinates of a point through pointer arguments. Call it from
+  \code{main}.
+\item Write a program that reads a matrix size $n$ from the keyboard, allocates an
+  $n\times n$ array of doubles with \code{malloc}, fills it with the Hilbert matrix
+  $H_{ij} = 1/(i+j+1)$ (zero-based indices), prints it, and frees the memory.
+\item Introduce a deliberate bug into \file{readstats.c}: remove the line
+  \code{free(x);}. The program still works. Why is it nevertheless wrong? Research the
+  tool \code{valgrind} (or the compiler option \code{-fsanitize=address}) and use it to
+  detect the leak.
+\item Write a \code{struct} for a resistor (name, resistance, power rating) and a function
+  that computes the equivalent resistance of an array of resistors in series and in
+  parallel.
+\end{exercises}

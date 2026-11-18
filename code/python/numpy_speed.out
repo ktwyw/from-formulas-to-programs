@@ -1,0 +1,4 @@
+Python loop :    283.4 ms
+NumPy       :     10.8 ms
+Speed-up    :       26 x
+Same result : True

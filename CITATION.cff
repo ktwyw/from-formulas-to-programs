@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this material, please cite it as below."
+type: software
+title: "From Formulas to Programs: How Engineers Compute in Python, Fortran, C, MATLAB and More"
+version: 1.0.1
+date-released: 2026-11-18
+authors:
+  - family-names: Wang
+    given-names: Yanwei
+    orcid: "https://orcid.org/0000-0002-8488-9833"
+    email: yanwei.wang@nu.edu.kz
+    affiliation: "Department of Chemical and Materials Engineering, School of Engineering, Nazarbayev University, Astana, Kazakhstan"
+repository-code: "https://github.com/ktwyw/from-formulas-to-programs"
+license:
+  - MIT
+  - CC-BY-4.0
+keywords:
+  - programming languages
+  - engineering education
+  - Python
+  - Fortran
+  - C
+  - MATLAB
+  - Julia
+  - numerical methods
+abstract: >-
+  Reading notes for ENG 101 Programming for Engineers at Nazarbayev
+  University. A 216-page book that introduces the programming languages an
+  engineer meets (Python, Fortran, C, C++, C#, Java, JavaScript, MATLAB, the
+  Wolfram Language, R, Julia and others), with every complete example program
+  provided as a file together with its real output. The same small
+  engineering problem, a falling body with air drag solved by the Euler
+  method, is programmed in every language, and three numerical tasks are
+  compared side by side in thirteen languages.

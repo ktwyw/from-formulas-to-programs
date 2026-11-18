@@ -1,0 +1,403 @@
+% =====================================================================
+\phantomsection
+\addcontentsline{toc}{part}{More Languages an Engineer Meets}
+\BookChapter[More Languages an Engineer Meets]{More Languages an Engineer Meets}
+\label{ch:others}
+
+\begin{researchquestion}
+Which other languages will you meet in a database, a factory, a circuit, a workshop or a spreadsheet?
+\end{researchquestion}
+\OrientationNote
+% =====================================================================
+
+The languages in the previous chapters are general-purpose or scientific languages. An
+engineer also meets many others: newer systems languages that are replacing C and C++,
+languages for databases and automation, languages that run machines in factories,
+languages that describe electronic hardware, and languages for modelling physical
+systems. This chapter introduces them briefly. Each section answers three questions: what
+is it, where will you meet it, and what does it look like?
+
+% ---------------------------------------------------------------------
+\LearningOutcomes{Recognise code written in Rust, Go, SQL, Bash, VBA, Structured Text, Verilog, VHDL, Modelica and G-code; say what each language is for and who uses it; write a simple database query; and explain why memory safety, declarative queries and equation-based modelling matter.}
+
+\section{Rust: memory safety without a garbage collector}
+\label{sec:rust}
+
+\textbf{Rust} (Mozilla Research, 2010; version 1.0 in 2015) is a systems programming
+language that aims at the speed and control of C and C++ while making memory errors ---
+buffer overflows, use-after-free, data races between threads --- impossible in ordinary
+code. It achieves this with an \term{ownership} system: every value has exactly one owner,
+references to it are \emph{borrowed} under rules that the compiler checks, and memory is
+freed when the owner goes out of scope. Programs that break the rules do not compile.
+\codefile{Rust}{rust/drag.rs}{the drag problem in Rust}
+\begin{lstlisting}[style=shell]
+$ rustc -O drag.rs && ./drag          # or, in a project:  cargo run --release
+\end{lstlisting}
+\outfile{rust/drag.out}
+Variables are immutable unless declared \code{mut}; types are inferred but strict
+(\code{n as f64} converts an integer explicitly); and \code{println!} is a macro with
+\py-like format strings. Rust's build tool and package manager \textbf{Cargo} is
+widely admired.
+
+\emph{Where you meet it:} operating systems (parts of Linux, Windows and Android), web
+browsers, embedded firmware, safety-critical and security-sensitive software, and
+command-line tools. Some fast \py tools are written in Rust (the package manager
+\code{uv}, the linter \code{ruff}, the data-frame library Polars). Government agencies in
+several countries now recommend memory-safe languages such as Rust for new systems
+software.
+
+% ---------------------------------------------------------------------
+\section{Go: simple, fast, concurrent}
+
+\textbf{Go} (Google, 2009; designed by Robert Griesemer, Rob Pike and Ken Thompson ---
+the co-creator of Unix) is a deliberately small, statically typed, compiled language with
+garbage collection and built-in support for concurrency (\emph{goroutines} and
+\emph{channels}). It compiles quickly to a single executable file with no dependencies.
+\codefile{Go}{go/drag.go}{the drag problem in Go}
+\outfile{go/drag.out}
+\code{:=} declares and initialises a variable with an inferred type, \code{make} creates a
+\emph{slice} (a growable array), and the C-like \code{printf} verbs are reused.
+
+\emph{Where you meet it:} cloud infrastructure (Docker, Kubernetes), network services,
+command-line tools, and back ends of industrial Internet-of-Things platforms.
+
+% ---------------------------------------------------------------------
+\section{SQL: the language of databases}
+
+Engineering data increasingly live in databases: laboratory information systems,
+maintenance records, production logs, sensor time series. \textbf{SQL} (Structured Query
+Language, IBM 1974, ISO standard since 1987) is the language for defining, querying and
+updating \emph{relational} databases, in which data are stored in tables of rows and
+columns. SQL is \emph{declarative} (Chapter~\ref{ch:intro}): you describe the result you
+want and the database works out how to compute it efficiently.
+
+The following script uses \textbf{SQLite}, a small database engine contained in a single
+file, which is built into \py (\code{import sqlite3}), every smartphone and every web
+browser. It loads the tensile data and asks two questions.
+\codefile{SQL}{sql/tensile.sql}{querying the tensile data in SQL}
+\begin{lstlisting}[style=shell]
+$ sqlite3 -header -column :memory: < tensile.sql
+\end{lstlisting}
+\outfile{sql/tensile.out}
+(The \code{.import} line is a command of the SQLite shell, not standard SQL.) The core
+statements are \code{SELECT \ldots\ FROM \ldots\ WHERE \ldots\ GROUP BY \ldots\ ORDER BY},
+\code{INSERT}, \code{UPDATE}, \code{DELETE}, \code{CREATE TABLE}, and \code{JOIN}, which
+combines tables --- for example, a table of specimens with a table of material batches.
+Other database systems (PostgreSQL, MySQL, Microsoft SQL Server, Oracle) use slightly
+different dialects of the same language. pandas, R and every other data-analysis tool can
+send SQL queries to a database and receive the results as a table.
+
+% ---------------------------------------------------------------------
+\section{Shell scripting: Bash and PowerShell}
+
+The \term{shell} is the program that reads the commands you type in a terminal. Shell
+scripts automate sequences of commands: compiling code, running a simulation for many
+parameter values, moving and renaming files, submitting jobs to a computing cluster. On
+Linux and macOS the standard shell is \textbf{Bash} (or the very similar \textbf{zsh});
+on Windows it is \textbf{PowerShell}. Every high-performance computing cluster runs Linux,
+so engineers who run large simulations need some Bash.
+\codefile{bash}{bash/run_cases.sh}{a parameter study in Bash}
+\outfile{bash/run_cases.out}
+The script loops over three drag coefficients, creates a modified copy of our \py
+program with the stream editor \code{sed}, runs it, extracts the terminal velocity with
+\code{grep} and \code{awk}, and stores each result in its own file. The Unix philosophy is
+visible here: many small programs, each doing one thing, connected by pipes (\code{|}).
+In a real study one would pass the parameter as a command-line argument rather than editing
+the source, but this pattern of ``generate input files, run, extract results'' is exactly
+how engineers drive commercial and open-source solvers. Job schedulers on clusters (such as
+Slurm) are also controlled with Bash scripts.
+
+% ---------------------------------------------------------------------
+\section{Excel formulas and VBA}
+\label{sec:vba}
+
+The spreadsheet is the most widely used programming environment in engineering, even
+though many of its users do not think of it as programming. Excel formulas form a
+declarative, functional language: \code{=B2*C2}, \code{=SUM(D2:D50)},
+\code{=IF(E2>275,"pass","fail")}, \code{=SQRT(\$B\$1*\$B\$3/\$B\$2)}. Recent versions added
+\code{LAMBDA} (user-defined functions), \code{LET} (named intermediate values) and dynamic
+arrays, and since 2023 Excel can also run \py code in cells.
+
+\textbf{VBA} (Visual Basic for Applications, 1993) is the macro language built into
+Microsoft Office. It is old and Windows-centred, but a vast number of engineering
+calculation workbooks in industry depend on it. A VBA user-defined function can be called
+from a cell like any built-in function:
+\begin{lstlisting}[language=VBA]
+' Darcy friction factor (Swamee-Jain), usable in a cell as =FRICTION(B2, C2)
+Function FRICTION(Re As Double, relRough As Double) As Double
+    If Re < 2300 Then
+        FRICTION = 64 / Re
+    Else
+        FRICTION = 0.25 / (Log(relRough / 3.7 + 5.74 / Re ^ 0.9) / Log(10)) ^ 2
+    End If
+End Function
+
+' A macro that fills a table with the Euler solution of the drag problem
+Sub DragTable()
+    Dim m As Double, c As Double, g As Double, dt As Double, v As Double
+    Dim n As Integer
+    m = 80: c = 0.25: g = 9.81: dt = 0.5: v = 0
+    Range("A1:B1").Value = Array("t (s)", "v (m/s)")
+    For n = 0 To 40
+        Cells(n + 2, 1).Value = n * dt
+        Cells(n + 2, 2).Value = v
+        v = v + dt * (g - c / m * v ^ 2)
+    Next n
+End Sub
+\end{lstlisting}
+Note that VBA's \code{Log} is the natural logarithm, so $\log_{10}$ must be written
+\code{Log(x)/Log(10)} --- exactly the kind of detail that causes errors when formulas are
+translated between languages.
+
+\begin{engnote}[Engineering note: spreadsheet risk]
+Studies of real business spreadsheets have repeatedly found that a large fraction contain
+errors, and several costly financial and engineering mistakes have been traced to them.
+Spreadsheets are hard to test, formulas are hidden in cells, and copying a formula can
+silently shift a reference. For calculations that matter, document the inputs and units
+clearly, separate inputs from calculations, lock formula cells, and check results with an
+independent method --- or move the calculation into a tested script.
+\end{engnote}
+
+% ---------------------------------------------------------------------
+\section{PLC languages: Ladder Logic and Structured Text}
+\label{sec:plc}
+
+Factories, water-treatment plants, packaging lines and building systems are controlled by
+\term{programmable logic controllers} (PLCs): rugged industrial computers that read sensors
+and switch motors, valves and heaters in a fixed cycle, typically every few milliseconds.
+The international standard \textbf{IEC 61131-3} defines five PLC languages:
+\begin{itemize}
+\item \textbf{Ladder Diagram} (LD), a graphical language that looks like the relay wiring
+  diagrams electricians used before computers: two vertical ``rails'' with horizontal
+  ``rungs'' of contacts (inputs) and coils (outputs);
+\item \textbf{Function Block Diagram} (FBD), a graphical language of connected blocks;
+\item \textbf{Structured Text} (ST), a textual language similar to Pascal;
+\item \textbf{Sequential Function Chart} (SFC), for step-by-step sequences;
+\item Instruction List (IL), an assembly-like language, now deprecated.
+\end{itemize}
+Here is a tank-filling controller in Structured Text. The pump starts when the level falls
+below a low switch and stops at a high switch (hysteresis again, as in the Arduino example
+of Chapter~\ref{ch:c}), and an emergency stop overrides everything:
+\begin{lstlisting}[language=StructuredText]
+PROGRAM TankControl
+VAR_INPUT
+    LevelLow    : BOOL;     (* TRUE when the level is below the low switch *)
+    LevelHigh   : BOOL;     (* TRUE when the level is above the high switch *)
+    EmergencyStop : BOOL;
+END_VAR
+VAR_OUTPUT
+    Pump        : BOOL;
+    Alarm       : BOOL;
+END_VAR
+VAR
+    RunTimer    : TON;      (* on-delay timer: alarm if pumping too long *)
+END_VAR
+
+IF EmergencyStop OR LevelHigh THEN   (* the conditions that stop the pump come first *)
+    Pump := FALSE;
+ELSIF LevelLow THEN
+    Pump := TRUE;
+END_IF;
+
+RunTimer(IN := Pump, PT := T#10m);   (* 10 minutes *)
+Alarm := RunTimer.Q;                  (* pump ran > 10 min: possible leak *)
+END_PROGRAM
+\end{lstlisting}
+The same logic as a ladder rung reads: \emph{if} (\code{LevelLow} \emph{or} \code{Pump})
+\emph{and not} \code{LevelHigh} \emph{and not} \code{EmergencyStop}, \emph{then} energise
+\code{Pump} --- the ``seal-in'' circuit known to every electrician. The order of the tests in
+the Structured Text matters. Because the stop conditions are tested first, the pump
+switches off at a full tank even if a faulty low-level switch still reports \code{TRUE},
+exactly as the ladder rung does. A controller should fail in the safe direction. PLC programs are written
+in vendor tools such as Siemens TIA Portal, Rockwell Studio 5000 and CODESYS. Chemical,
+process, mechanical and electrical engineers who work in plants will meet them.
+
+% ---------------------------------------------------------------------
+\section{Hardware description languages: VHDL and Verilog}
+
+A \term{hardware description language} (HDL) does not describe a sequence of instructions
+for a processor; it describes a digital \emph{circuit} --- gates, flip-flops, wires ---
+whose parts all operate in parallel. HDL code is \emph{synthesised} into a configuration
+for an FPGA (field-programmable gate array) or into the layout of a custom chip (ASIC). The
+two main HDLs are \textbf{VHDL} (US Department of Defense, 1980s; Ada-like syntax) and
+\textbf{Verilog} (1984; C-like syntax), with its extension SystemVerilog.
+
+A 4-bit counter that counts clock pulses and can be reset:
+\begin{lstlisting}[language=Verilog]
+module counter4 (
+    input  wire       clk,      // clock
+    input  wire       reset,    // synchronous reset
+    output reg  [3:0] count     // 4-bit output: 0 ... 15
+);
+    always @(posedge clk) begin // on every rising edge of the clock
+        if (reset)
+            count <= 4'b0000;
+        else
+            count <= count + 1; // wraps from 15 back to 0
+    end
+endmodule
+\end{lstlisting}
+The same counter in VHDL:
+\begin{lstlisting}[language=VHDL]
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity counter4 is
+    port (clk, reset : in  std_logic;
+          count      : out unsigned(3 downto 0));
+end entity;
+
+architecture rtl of counter4 is
+    signal c : unsigned(3 downto 0) := (others => '0');
+begin
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            if reset = '1' then c <= (others => '0');
+            else c <= c + 1;
+            end if;
+        end if;
+    end process;
+    count <= c;
+end architecture;
+\end{lstlisting}
+Electrical and computer engineers use HDLs to design digital signal processing,
+communication interfaces, motor controllers and processors. MATLAB/Simulink (HDL Coder)
+and high-level synthesis tools can also generate HDL from C++ or block diagrams.
+
+% ---------------------------------------------------------------------
+\section{Modelica: equation-based modelling}
+\label{sec:modelica}
+
+In \py or MATLAB you must rearrange a physical model into the form
+$\dot{\mathbf{y}} = \mathbf{f}(t, \mathbf{y})$ before you can simulate it. \textbf{Modelica}
+(1997, Modelica Association) lets you write the equations as they are, and the tool does
+the rearranging. It is \emph{acausal}: an equation \code{m*der(v) = m*g - c*v\^{}2} does not
+say which variable is computed from which. Components (resistors, masses, pipes, pumps,
+heat exchangers) are connected through \emph{ports}, and the tool assembles and solves the
+resulting system of differential--algebraic equations.
+\begin{lstlisting}[language=Modelica]
+model FallingBody "Falling object with quadratic air drag"
+  parameter Real m = 80 "mass (kg)";
+  parameter Real c = 0.25 "drag coefficient (kg/m)";
+  parameter Real g = 9.81 "gravitational acceleration (m/s2)";
+  Real v(start = 0, fixed = true) "speed (m/s)";
+  Real h(start = 3000, fixed = true) "height (m)";
+equation
+  m * der(v) = m * g - c * v^2;
+  der(h) = -v;
+end FallingBody;
+\end{lstlisting}
+(\code{start} gives the initial value and \code{fixed = true} tells the tool to treat it
+as a firm initial condition, not as a first guess.) Modelica is used for multi-domain system simulation in the automotive, energy, building and
+process industries. Tools include the free \textbf{OpenModelica} and the commercial Dymola,
+Wolfram System Modeler and others; Modelica's large Standard Library contains thousands of
+ready-made mechanical, electrical, thermal and fluid components. Julia's ModelingToolkit
+and MATLAB's Simscape follow similar ideas.
+
+% ---------------------------------------------------------------------
+\section{G-code: the language of machine tools}
+
+CNC (computer numerical control) milling machines, lathes, laser cutters and 3D printers
+are driven by \textbf{G-code} (standardised as ISO 6983 and RS-274). Each line is a command
+to move the tool or change a machine state. G-code is usually generated by CAM software
+from a CAD model, but machinists read and edit it by hand.
+\begin{lstlisting}[language=GCode]
+(Cut a 40 mm x 20 mm rectangular pocket outline, 2 mm deep)
+G21                (units: millimetres)
+G90                (absolute coordinates)
+M03 S8000          (spindle on, clockwise, 8000 rpm)
+G00 X0 Y0 Z5       (rapid move above the start point)
+G01 Z-2 F100       (feed down into the material at 100 mm/min)
+G01 X40 F400       (cut along the edges)
+G01 Y20
+G01 X0
+G01 Y0
+G00 Z5             (retract)
+M05                (spindle off)
+M30                (end of program)
+\end{lstlisting}
+
+% ---------------------------------------------------------------------
+\section{Assembly language}
+
+As explained in Chapter~\ref{ch:intro}, assembly language is a readable form of machine
+code, specific to one processor family (x86-64 in most PCs, ARM in phones, Apple
+computers and most microcontrollers, RISC-V in a growing number of chips). Engineers rarely
+write assembly today, but reading it helps in two situations: debugging low-level embedded
+code, and understanding what a compiler has done to your loops. The website Compiler
+Explorer (\url{https://godbolt.org}) shows the assembly that C, C++, Fortran, Rust and many
+other compilers produce for any code you type, and is an excellent way to learn.
+
+% ---------------------------------------------------------------------
+\section{Graphical programming: LabVIEW and Simulink}
+
+Some engineering languages are drawn rather than typed. In \textbf{LabVIEW} (National
+Instruments, 1986), programs are \emph{block diagrams}: functions are boxes, and data flow
+along wires between them. A box runs as soon as all its inputs have arrived
+(\term{dataflow programming}), so parallelism is natural. LabVIEW is widely used for data
+acquisition, instrument control and automated test systems in laboratories and production.
+\textbf{Simulink} (Chapter~\ref{ch:matlab}) uses block diagrams to describe dynamic systems.
+Visual programming is also used in \textbf{Grasshopper} (parametric design in architecture
+and structural engineering), \textbf{Node-RED} (Internet of Things) and \textbf{Scratch}
+(teaching children). Graphical programs are easy to start but can become hard to manage,
+compare and version-control as they grow.
+
+% ---------------------------------------------------------------------
+\section{A few more names}
+
+\begin{description}
+\item[COBOL] (1959) Business data processing. Hundreds of billions of lines still run in
+  banks, insurance companies and governments; COBOL programmers remain in demand.
+\item[Pascal, Delphi, Ada] Pascal (1970) was the standard teaching language of the 1980s.
+  Its object-oriented descendant, Delphi (Object Pascal), is still used for Windows desktop
+  and database applications and is in the TIOBE top 20 (Table~\ref{tab:tiobe}).
+  Ada (1980), named after Ada Lovelace, was designed for the US Department of Defense and is
+  still used in avionics, railways and other safety-critical systems, often in its
+  formally verifiable subset SPARK.
+\item[Scratch] (MIT, 2007) A visual language for beginners, especially children. You build a
+  program by snapping together coloured blocks (``repeat 10'', ``if \ldots\ then'', ``move 10
+  steps'') instead of typing text, so syntax errors are impossible. Many of you may have met
+  it at school. The ideas are the same as in \py --- variables, loops, conditions, events
+  --- which is why Scratch is a good first step, and why it ranks surprisingly high in
+  popularity lists. Block-based programming is also used to program educational robots and
+  microcontroller boards (for example the micro:bit).
+\item[Dart] (Google, 2011) A C-family language with a syntax close to Java and JavaScript.
+  Its main use is \emph{Flutter}, a toolkit with which one program becomes an app for
+  Android, iOS, the web and the desktop at the same time. If you ever build a phone app
+  for field measurements or inspections, Dart with Flutter is one of the usual choices,
+  next to Kotlin and Swift. Hello world is \code{void main() \{ print(\sq{}Hello, world!\sq{}); \}}.
+\item[SAS] (1970s) A commercial system and language for statistics and data management,
+  long established in the pharmaceutical industry, banking and government statistics. In
+  those industries it does the work that R and \py do elsewhere, and regulators are used to
+  receiving its output.
+\item[Lua] A small, fast scripting language easy to embed in other programs; used in
+  games, in some engineering tools and in network equipment.
+\item[Kotlin, Swift] Modern languages for Android (Kotlin, on the JVM) and Apple platforms
+  (Swift), relevant if you build mobile apps for field engineers.
+\item[Haskell, OCaml, F\#, Elixir] Functional languages, valued for correctness and used in
+  finance, compilers, formal verification and highly reliable services.
+\item[Perl, Ruby, PHP] Scripting languages of the early web. PHP still runs a large share of all websites (for example those built with WordPress). Perl was once the standard
+  ``glue'' language of scientific computing, a role \py has taken over.
+\item[Mojo] A new language (2023) from the creator of LLVM and Swift, designed as a fast
+  superset of \py for AI hardware.
+\item[CUDA, OpenCL, SYCL] Extensions and dialects of C/C++ for programming GPUs.
+\item[\LaTeX] A typesetting language: these notes are written in it. Its macro language is
+  Turing-complete, so in principle it is a programming language too.
+\end{description}
+
+\begin{exercises}
+\item Install Rust (\url{https://rustup.rs}) and run \file{drag.rs}. Then try to change
+  \code{v[n + 1]} inside the loop after removing the \code{mut} keyword from the declaration
+  of \code{v}. Read the compiler's error message. How does it help you?
+\item Use \py's built-in \code{sqlite3} module to create the \code{tensile} table, insert
+  the data from \file{tensile.csv}, and run the two queries of this chapter.
+\item Write a Bash script that compiles and runs the C, C++ and Fortran versions of the drag
+  program and uses \code{diff} to check that their outputs are identical.
+\item Implement the drag table in an Excel sheet using only formulas (one row per time
+  step). Compare with the VBA macro. Which would you prefer to give to a colleague, and why?
+\item Draw the ladder diagram for the tank controller in this chapter.
+\item Install OpenModelica and simulate \code{FallingBody}. When does the body reach the
+  ground?
+\end{exercises}

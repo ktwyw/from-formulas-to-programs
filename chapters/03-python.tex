@@ -1,0 +1,1023 @@
+% =====================================================================
+\phantomsection
+\addcontentsline{toc}{part}{The Main Language of the Course}
+\BookChapter[Python]{Python: The Main Language of the Course}
+\label{ch:python}
+
+\begin{researchquestion}
+What do you need to know about Python to write, test and trust a small engineering program?
+\end{researchquestion}
+% =====================================================================
+
+\begin{factsheet}{Python}
+First appeared & 1991 (\py~3.0 in 2008; a new version, 3.x, appears every October)\\
+Designed by & Guido van Rossum, Centrum Wiskunde \& Informatica, Netherlands\\
+Paradigms & procedural, object-oriented, functional; array style through NumPy\\
+Typing & dynamic, strong; optional type hints\\
+Execution & interpreted (CPython bytecode interpreter); alternatives include PyPy (JIT)\\
+File extension & \file{.py}; notebooks \file{.ipynb}\\
+Cost & free and open source (PSF licence)\\
+Used for & data analysis, scientific computing, machine learning, automation,
+  scripting of engineering software, web back ends, teaching\\
+Famous software & NumPy, SciPy, pandas, Matplotlib, scikit-learn, PyTorch, TensorFlow,
+  Jupyter, ASE, pymatgen, FEniCS, Blender scripting, Abaqus scripting\\
+\end{factsheet}
+
+\py is the main language of ENG 101. This chapter is a compact but complete
+introduction that follows the order of the course. It is longer than the other language
+chapters because it is the reference point for all of them: when a later chapter says
+``unlike \py'', this is the \py it means.
+
+\LearningOutcomes{Write scripts that use variables, decisions, loops, collections and functions; read and write data files; handle errors with exceptions; organise related data and functions in a class; compute with NumPy arrays instead of loops; plot results with Matplotlib; call SciPy and pandas for standard numerical and data tasks; and debug and test your own code.}
+
+\section{Why Python?}
+
+\begin{history}
+Guido van Rossum started \py as a hobby project over the Christmas holidays of 1989,
+while working at the Centrum Wiskunde \& Informatica in Amsterdam. He wanted a language
+that was easy to read, easy to extend with C code, and fun to use. The name comes from the
+British comedy group Monty Python, not from the snake. \py~2.0 (2000) added many features
+that made it popular; \py~3.0 (2008) cleaned up the language at the cost of breaking
+compatibility, and the transition took more than a decade. \py~2 reached its official
+end of life in January 2020. Only \py~3 is used today.
+\end{history}
+
+\py's success in engineering and science rests on a few things.
+\begin{itemize}
+\item \textbf{Readability.} \py code looks almost like pseudocode. The language's design
+  principles, which you can print with \code{import this}, include ``Readability
+  counts'' and ``There should be one --- and preferably only one --- obvious way to do
+  it''.
+\item \textbf{Batteries included.} The standard library contains modules for mathematics,
+  file formats, dates, networking, testing and much more.
+\item \textbf{The scientific ecosystem.} NumPy, SciPy, Matplotlib, pandas and Jupyter give
+  \py most of what MATLAB offers, for free. On top of them sit thousands of specialised
+  packages for every branch of engineering.
+\item \textbf{A glue language.} \py can call libraries written in C, C++ and Fortran
+  easily, and many commercial engineering programs (Abaqus, ANSYS, Aspen, COMSOL, ArcGIS,
+  Blender, FreeCAD, ParaView) can be controlled with \py scripts.
+\item \textbf{Machine learning.} The major deep-learning frameworks (PyTorch, TensorFlow,
+  JAX) are driven from \py.
+\end{itemize}
+Its main weakness is speed: pure-\py loops are slow (Section~\ref{sec:numpy-speed}).
+Section~\ref{sec:python-strengths} discusses this and other limits.
+
+\section{Getting started}
+
+\subsection*{Install a distribution that includes the scientific libraries}
+
+There are several good ways to get \py:
+\begin{itemize}
+\item \textbf{Anaconda} or its smaller sibling \textbf{Miniforge} install \py together
+  with NumPy, SciPy, Matplotlib, pandas and Jupyter in one step, and include the
+  \code{conda} package manager. This is the easiest option for engineering students.
+\item \textbf{python.org} offers the official installer for Windows and macOS. You then
+  install packages with \code{pip}.
+\item On Linux, \py is usually already installed; use the system package manager or
+  \code{uv}/\code{pip} in a virtual environment.
+\item \textbf{Online notebooks} such as Google Colab and JupyterLite run \py in a web
+  browser with nothing to install.
+\end{itemize}
+
+\subsection*{Run Python interactively, as a script, or in a notebook}
+
+\paragraph{Interactive mode.} Type \code{python} (or \code{python3}) in a terminal. The
+prompt \code{>>>} appears, and every line you type is executed immediately:
+\begin{lstlisting}[language=Python]
+>>> 2 + 3
+5
+>>> import math
+>>> math.sqrt(80 * 9.81 / 0.25)
+56.02856414093976
+\end{lstlisting}
+This is perfect for quick calculations and for trying out an idea.
+
+\paragraph{Scripts.} For anything longer, write the code in a text file with the extension
+\file{.py} and run the whole file:
+\codefile{Python}{python/hello.py}{a first script}
+\begin{lstlisting}[style=shell]
+$ python3 hello.py
+\end{lstlisting}
+\outfile{python/hello.out}
+
+\paragraph{Notebooks.} A \term{Jupyter notebook} (\file{.ipynb}) mixes code cells,
+their output (numbers, tables, plots) and formatted text with equations in one document.
+Notebooks are ideal for exploring data, documenting an analysis and teaching; many ENG
+101 case studies are notebooks. Their weakness is that cells can be run in any order, so
+a notebook can end up in a state that nobody can reproduce. Before you share a notebook,
+choose ``Restart kernel and run all cells'' and check that it still works.
+
+\subsection*{Use an editor that can run and debug code}
+
+An \term{IDE} (integrated development environment) combines an editor, a way to run code,
+and a \term{debugger} that lets you pause a program and inspect its variables. Popular
+choices for \py are \textbf{VS Code} (free, works with every language in these notes),
+\textbf{Spyder} (MATLAB-like, included in Anaconda), \textbf{PyCharm} and
+\textbf{JupyterLab}. Use whichever your lab sessions use; the code is the same.
+
+\section{Values, variables and types}
+
+\subsection*{A variable is a name attached to a value}
+
+A \term{variable} is a name that refers to a value. You create it by \term{assignment}
+with a single equals sign:
+\begin{lstlisting}[language=Python]
+mass = 80.0              # kg
+g = 9.81                 # m/s^2
+weight = mass * g        # N
+print(weight)            # 784.8000000000001
+\end{lstlisting}
+The \code{=} sign does not mean mathematical equality. It means ``compute the value on
+the right, then attach the name on the left to it''. That is why \code{n = n + 1} makes
+sense in a program even though it is false in algebra.
+
+Variable names may contain letters, digits and underscores, must not start with a digit,
+and are case sensitive (\code{Mass} and \code{mass} are different). By convention \py
+uses \code{lower\_case\_with\_underscores}. Choose names that say what the value means:
+\code{flow\_rate} is better than \code{q}, and much better than \code{x2}. Some words are
+reserved by the language and cannot be used as names: \code{if}, \code{for}, \code{def},
+\code{class}, \code{lambda}, \code{True}, \code{None}, and a few others.
+
+\subsection*{Six basic types cover most needs}
+
+\begin{center}
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Type} & \textbf{Meaning} & \textbf{Examples} & \textbf{Notes}\\
+\midrule
+\code{int} & integer & \code{42}, \code{-7}, \code{1\_000\_000} & unlimited size\\
+\code{float} & real number & \code{9.81}, \code{6.022e23}, \code{-0.5} & IEEE double\\
+\code{complex} & complex number & \code{3+4j} & \code{j} is $\sqrt{-1}$\\
+\code{bool} & truth value & \code{True}, \code{False} & \\
+\code{str} & text & \code{"steel"}, \code{\sq{}Al\sq{}}, \code{"""..."""} & Unicode\\
+\code{NoneType} & ``no value'' & \code{None} & \\
+\bottomrule
+\end{tabular}
+\end{center}
+The function \code{type()} tells you the type of a value, and \code{int()},
+\code{float()}, \code{str()} convert between types:
+\begin{lstlisting}[language=Python]
+>>> type(9.81)
+<class 'float'>
+>>> int("42") + 1
+43
+>>> float("2.5e3")
+2500.0
+>>> str(3.0) + " m"
+'3.0 m'
+\end{lstlisting}
+
+\subsection*{Division always gives a float, and \texttt{**} is the power}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Operator} & \textbf{Meaning} & \textbf{Example}\\
+\midrule
+\code{+ - *} & add, subtract, multiply & \code{2*3 - 1} $\to$ \code{5}\\
+\code{/} & true division (always a float) & \code{7/2} $\to$ \code{3.5}\\
+\code{//} & floor division & \code{7//2} $\to$ \code{3}, \code{-7//2} $\to$ \code{-4}\\
+\code{\%} & remainder (modulo) & \code{7 \% 2} $\to$ \code{1}\\
+\code{**} & power & \code{2**10} $\to$ \code{1024}, \code{2**0.5} $\to$ \code{1.414\ldots}\\
+\bottomrule
+\end{tabular}
+\end{center}
+Operators follow the usual mathematical precedence: \code{**} first, then \code{* / // \%},
+then \code{+ -}. When in doubt, use parentheses. Note that \code{-2**2} is \code{-4},
+because the power is applied before the minus sign.
+
+Mathematical functions live in the \code{math} module:
+\begin{lstlisting}[language=Python]
+import math
+math.sqrt(2.0)        # 1.4142135623730951
+math.exp(1.0)         # 2.718281828459045
+math.log(100.0)       # natural log: 4.605170185988092
+math.log10(100.0)     # 2.0
+math.sin(math.pi/6)   # 0.49999999999999994  (rounding error!)
+math.degrees(math.pi) # 180.0
+math.hypot(3, 4)      # 5.0
+\end{lstlisting}
+
+\begin{pitfall}[Common pitfall: \texttt{\^{}} is not a power]
+In \py, \code{2\^{}3} is \code{1}, not \code{8}: \code{\^{}} is the bitwise
+exclusive-or operator. Use \code{2**3}. (MATLAB and Julia use \code{\^{}} for powers;
+Fortran and \py use \code{**}; C, C++, Java and JavaScript need a function such as
+\code{pow(2, 3)} or \code{Math.pow(2, 3)}, although JavaScript also has \code{**}.)
+\end{pitfall}
+
+\subsection*{Format output with f-strings}
+
+Strings are written in single or double quotes. They can be joined with \code{+},
+repeated with \code{*}, indexed and \emph{sliced}:
+\begin{lstlisting}[language=Python]
+material = "stainless steel"
+len(material)          # 15
+material[0]            # 's'      (first character; index 0)
+material[-1]           # 'l'      (last character)
+material[0:9]          # 'stainless'
+material.upper()       # 'STAINLESS STEEL'
+material.split()       # ['stainless', 'steel']
+"steel" in material    # True
+\end{lstlisting}
+Strings are \emph{immutable}: methods such as \code{upper()} return a new string and leave
+the original unchanged.
+
+For output, use \term{f-strings} (formatted string literals). Put an \code{f} before the
+quote and write expressions in braces. After a colon you can give a \term{format
+specification}:
+\begin{lstlisting}[language=Python]
+v = 56.02856414093976
+print(f"Terminal velocity: {v} m/s")       # all digits
+print(f"Terminal velocity: {v:.2f} m/s")   # 2 decimals: 56.03
+print(f"{v:10.3f}|")                       # width 10:      56.029|
+print(f"{v:.3e}")                          # scientific: 5.603e+01
+print(f"{1234567:,}")                      # 1,234,567
+print(f"{0.0712:.1%}")                     # 7.1%
+print(f"{v=:.1f}")                         # v=56.0  (handy for debugging)
+\end{lstlisting}
+The format mini-language (\code{10.3f}, \code{.3e}) is almost the same as the
+\code{printf} format of C, which you will see again in C, C++, MATLAB, R, Julia and
+Fortran-like forms.
+
+\subsection*{Keyboard input always arrives as text}
+
+\code{input()} prints a prompt and returns what the user types, \emph{as a string}. Convert
+it before calculating:
+\begin{lstlisting}[language=Python]
+d = float(input("Pipe diameter in mm: "))
+area = 3.141592653589793 * (d / 1000)**2 / 4
+print(f"Area = {area:.3e} m^2")
+\end{lstlisting}
+In engineering programs, keyboard input is rare. Parameters usually come from a file or
+from function arguments, which makes the program repeatable.
+
+\section{Making decisions: \texttt{if}}
+
+The \code{if} statement runs a block of code only when a condition is true. In \py the
+block is marked by \term{indentation} (four spaces by convention) after a colon:
+\begin{lstlisting}[language=Python]
+Re = 45000.0
+if Re < 2300:
+    regime = "laminar"
+elif Re < 4000:
+    regime = "transitional"
+else:
+    regime = "turbulent"
+print(f"Re = {Re:.0f}: {regime} flow")
+\end{lstlisting}
+Conditions use the comparison operators \code{== != < <= > >=} and can be combined with
+\code{and}, \code{or} and \code{not}. \py also allows chained comparisons such as
+\code{0 <= x < 1}.
+
+\begin{keyidea}
+Indentation is part of \py's grammar. In C, Java or JavaScript the braces
+\code{\{ \}} define a block and indentation is only for the reader; in \py the
+indentation \emph{is} the block. Never mix tabs and spaces; let your editor insert four
+spaces.
+\end{keyidea}
+
+\section{Repeating: loops}
+
+\subsection*{A \texttt{for} loop visits each item of a sequence}
+
+A \code{for} loop takes each item of a sequence in turn:
+\begin{lstlisting}[language=Python]
+for material in ["steel", "aluminium", "titanium"]:
+    print(material)
+\end{lstlisting}
+To loop over numbers, use \code{range(start, stop, step)}. The \code{stop} value is
+\emph{not} included:
+\begin{lstlisting}[language=Python]
+# Temperature conversion table from -20 to 100 C in steps of 20
+print("   C       F       K")
+for T_C in range(-20, 101, 20):
+    T_F = 9 / 5 * T_C + 32
+    T_K = T_C + 273.15
+    print(f"{T_C:4d} {T_F:7.1f} {T_K:7.2f}")
+\end{lstlisting}
+\begin{lstlisting}[style=output]
+   C       F       K
+ -20    -4.0  253.15
+   0    32.0  273.15
+  20    68.0  293.15
+  40   104.0  313.15
+  60   140.0  333.15
+  80   176.0  353.15
+ 100   212.0  373.15
+\end{lstlisting}
+Two helper functions make loops cleaner: \code{enumerate} gives you the index and the item,
+and \code{zip} walks through several sequences in step:
+\begin{lstlisting}[language=Python]
+names = ["T1", "T2", "T3"]
+temps = [293.1, 305.6, 299.4]
+for i, (name, T) in enumerate(zip(names, temps)):
+    print(i, name, T)
+\end{lstlisting}
+
+\subsection*{A \texttt{while} loop repeats until a condition fails}
+
+A \code{while} loop repeats as long as a condition is true. Use it when you do not know in
+advance how many repetitions you need, for example in an iterative solver:
+\begin{lstlisting}[language=Python]
+# How many years until an investment doubles at 7% interest?
+value, years = 1.0, 0
+while value < 2.0:
+    value *= 1.07
+    years += 1
+print(years)        # 11
+\end{lstlisting}
+\code{break} leaves a loop immediately; \code{continue} skips to the next repetition.
+Every \code{while} loop needs a condition that eventually becomes false --- or a
+\code{break} --- otherwise it runs forever. In an iterative method, always add a maximum
+number of iterations.
+
+\subsection*{Build up a result one step at a time}
+
+Many calculations add up contributions one at a time. Start with a neutral value and
+update it in the loop:
+\begin{lstlisting}[language=Python]
+# Approximate pi with the Leibniz series 4(1 - 1/3 + 1/5 - ...)
+total = 0.0
+for k in range(100_000):
+    total += (-1)**k / (2*k + 1)
+print(4 * total)    # 3.1415826535897198
+\end{lstlisting}
+
+\section{Collections}
+
+\subsection*{A list is an ordered collection that can change}
+
+A \term{list} is an ordered, changeable collection of values in square brackets:
+\begin{lstlisting}[language=Python]
+loads = [12.5, 14.0, 13.2, 15.8]      # kN
+loads.append(11.9)                    # add at the end
+loads[0] = 12.6                       # change an element
+len(loads)                            # 5
+max(loads), min(loads), sum(loads)    # (15.8, 11.9, 67.5)
+sorted(loads)                         # a new sorted list
+\end{lstlisting}
+\term[slicing]{Slicing} extracts parts of a list with \code{[start:stop:step]}; as with
+\code{range}, \code{stop} is excluded. Negative indices count from the end.
+\begin{lstlisting}[language=Python]
+x = [0, 10, 20, 30, 40, 50]
+x[1:4]      # [10, 20, 30]
+x[:3]       # [0, 10, 20]
+x[3:]       # [30, 40, 50]
+x[::2]      # [0, 20, 40]
+x[::-1]     # [50, 40, 30, 20, 10, 0]
+\end{lstlisting}
+
+\subsection*{A comprehension builds a list in one line}
+
+A \term{list comprehension} builds a new list from an old one in a single readable line.
+It reads almost like set notation in mathematics,
+$\{\, x^2 : x \in X,\ x > 0\,\}$:
+\begin{lstlisting}[language=Python]
+X = [-2, -1, 0, 1, 2, 3]
+squares = [x**2 for x in X if x > 0]           # [1, 4, 9]
+T_K = [T + 273.15 for T in [20, 25, 30]]       # [293.15, 298.15, 303.15]
+\end{lstlisting}
+
+\subsection*{Tuples are fixed, dictionaries look things up, sets remove duplicates}
+
+A \term{tuple} is like a list but cannot be changed after creation. Tuples are used for
+fixed groups of values such as coordinates, and for returning several values from a
+function:
+\begin{lstlisting}[language=Python]
+point = (1.5, -0.3, 2.0)
+x, y, z = point                 # "unpacking"
+\end{lstlisting}
+A \term{dictionary} maps \emph{keys} to \emph{values}. It is ideal for looking up
+properties by name:
+\begin{lstlisting}[language=Python]
+density = {"steel": 7850, "aluminium": 2700, "water": 998}   # kg/m^3
+density["steel"]                     # 7850
+density["copper"] = 8960             # add an entry
+for name, rho in density.items():
+    print(f"{name:10s} {rho:6d} kg/m^3")
+"titanium" in density                # False
+density.get("titanium", 4500)        # 4500 (default if missing)
+\end{lstlisting}
+A \term{set} is an unordered collection without duplicates, useful for membership tests and
+for removing repeated values: \code{set([1, 2, 2, 3])} is \code{\{1, 2, 3\}}.
+
+\section{Functions}
+
+\subsection*{Define a function once, with its units documented}
+
+A \term{function} packages a calculation under a name so that it can be reused and
+tested. It is defined with \code{def}, takes \term{parameters}, and returns a result with
+\code{return}:
+\begin{lstlisting}[language=Python]
+import math
+
+def terminal_velocity(m, c, g=9.81):
+    """Terminal velocity (m/s) of a falling body with quadratic drag.
+
+    m : mass in kg
+    c : drag coefficient in kg/m
+    g : gravitational acceleration in m/s^2 (default 9.81)
+    """
+    return math.sqrt(m * g / c)
+
+print(terminal_velocity(80.0, 0.25))          # 56.02856414093976
+print(terminal_velocity(80.0, 0.25, g=1.62))  # on the Moon (if it had air)
+\end{lstlisting}
+The string in triple quotes directly after the \code{def} line is a \term{docstring}. It
+documents the function and is shown by \code{help(terminal\_velocity)} and by IDEs. Always
+state the units of physical inputs and outputs.
+
+Parameters can have \term{default values} (\code{g=9.81}), and arguments can be passed by
+position or by name (\term{keyword arguments}). Keyword arguments make calls with many
+parameters much easier to read.
+
+\subsection*{A function can return several values}
+
+A function can return a tuple, which the caller unpacks:
+\begin{lstlisting}[language=Python]
+def stats(values):
+    n = len(values)
+    mean = sum(values) / n
+    var = sum((v - mean)**2 for v in values) / (n - 1)
+    return mean, var**0.5
+
+mean, std = stats([276.4, 281.9, 268.7, 273.5])
+\end{lstlisting}
+
+\subsection*{Variables inside a function stay inside}
+
+Variables created inside a function are \term{local}: they exist only while the function
+runs and are invisible outside it. A function can \emph{read} variables defined at the top
+level of the file (\term{global} variables), but relying on this makes code hard to
+understand and test. Pass everything a function needs as arguments, and return everything
+it produces.
+
+\subsection*{A function can be passed to another function}
+
+In \py a function is an object like any other. You can store it in a variable or pass it
+to another function. This is how general-purpose tools such as root finders and ODE
+solvers work: you hand them \emph{your} function. Short one-line functions can be written
+with \code{lambda}:
+\begin{lstlisting}[language=Python]
+def derivative(f, x, h=1e-6):
+    """Central-difference approximation of f'(x)."""
+    return (f(x + h) - f(x - h)) / (2 * h)
+
+derivative(math.sin, 0.0)              # 0.9999999999998334  (cos 0 = 1)
+derivative(lambda x: x**3, 2.0)        # 12.000000000789157  (exact: 12)
+\end{lstlisting}
+
+\subsection*{Newton's method shows functions and loops working together}
+
+Newton's method finds a root of $f(x) = 0$ by repeatedly following the tangent line:
+\[
+x_{k+1} = x_k - \frac{f(x_k)}{f'(x_k)}.
+\]
+We test it on the cubic $f(x) = x^3 - 2x - 5$, which Newton himself used as an example. The
+program uses functions, a loop with a stopping criterion, and an exception if the method
+fails.
+\codefile{Python}{python/newton.py}{Newton's method}
+\outfile{python/newton.out}
+Notice how quickly the step size shrinks: $10^{-1}$, $10^{-3}$, $10^{-5}$, $10^{-10}$.
+The number of correct digits roughly doubles at each iteration. This is \term{quadratic
+convergence}, and it is why Newton's method (in many variants) is at the heart of almost
+every nonlinear solver in engineering software. The same program appears in every language
+in Chapter~\ref{ch:rosetta}.
+
+\section{Modules and packages}
+
+A \term{module} is a \file{.py} file containing functions, classes and variables that
+other programs can \code{import}. A \term{package} is a directory of modules. There are
+several ways to import:
+\begin{lstlisting}[language=Python]
+import math                       # use as math.sqrt
+import numpy as np                # standard abbreviation
+from math import sqrt, pi         # use as sqrt, pi
+from scipy.integrate import solve_ivp
+\end{lstlisting}
+Avoid \code{from module import *}: it fills your program with names whose origin is
+unclear.
+
+Your own files are modules too. If \file{fluids.py} defines \code{reynolds()}, another file
+in the same folder can write \code{from fluids import reynolds}. Code at the top level of a
+module runs when the module is imported. To have code that runs only when the file is
+executed directly, use the idiom
+\begin{lstlisting}[language=Python]
+if __name__ == "__main__":
+    main()
+\end{lstlisting}
+
+\subsection*{Most of what you need is already written}
+
+The \term{standard library} is installed with \py. Useful modules for engineers include
+\code{math}, \code{cmath} (complex maths), \code{statistics}, \code{random}, \code{csv},
+\code{json}, \code{pathlib} (file paths), \code{datetime}, \code{time}, \code{itertools},
+\code{functools}, \code{fractions}, \code{decimal} and \code{unittest}.
+
+Everything else comes from the \term{Python Package Index} (PyPI), which hosts more than
+half a million packages, installed with
+\begin{lstlisting}[style=shell]
+$ pip install numpy scipy matplotlib pandas
+$ conda install numpy scipy matplotlib pandas     # if you use Anaconda
+\end{lstlisting}
+Different projects may need different versions of the same package. A \term{virtual
+environment} (\code{python -m venv}, \code{conda create}, or \code{uv}) gives each project
+its own isolated set of packages, and a file such as \file{requirements.txt} or
+\file{environment.yml} records them so others can reproduce your setup.
+
+\section{Errors and exceptions}
+
+When something goes wrong at run time, \py raises an \term{exception} and prints a
+\term{traceback}:
+\begin{lstlisting}[language=Python]
+>>> values = [1.0, 2.0]
+>>> values[2]
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+IndexError: list index out of range
+\end{lstlisting}
+Read tracebacks from the bottom up: the last line names the error, and the lines above it
+show where it happened. Common exceptions are \code{NameError} (misspelt variable),
+\code{TypeError} (wrong type, e.g.\ \code{"3" + 4}), \code{ValueError} (right type,
+wrong value, e.g.\ \code{float("abc")} or \code{math.sqrt(-1)}),
+\code{ZeroDivisionError}, \code{IndexError}, \code{KeyError} and
+\code{FileNotFoundError}.
+
+You can catch an exception with \code{try}/\code{except} and handle it:
+\begin{lstlisting}[language=Python]
+text = input("Enter a temperature in K: ")
+try:
+    T = float(text)
+except ValueError:
+    print(f"'{text}' is not a number")
+else:
+    if T < 0:
+        raise ValueError("Absolute temperature cannot be negative")
+    print(f"T = {T} K")
+\end{lstlisting}
+\code{raise} creates an exception yourself, which is the right thing to do when a function
+receives input that makes no physical sense. \code{assert} checks a condition that must
+be true if the program is correct, and is useful during development:
+\code{assert len(t) == len(v), "time and speed arrays differ"}.
+
+\section{Files}
+
+\subsection*{Open files with \texttt{with}, so that they are always closed}
+
+Open files with a \code{with} statement, which closes them automatically even if an error
+occurs:
+\begin{lstlisting}[language=Python]
+# Write
+with open("results.txt", "w") as f:
+    f.write("t v\n")
+    for t, v in [(0, 0.0), (1, 9.7)]:
+        f.write(f"{t} {v}\n")
+
+# Read line by line
+with open("results.txt") as f:
+    header = f.readline()
+    for line in f:
+        t, v = line.split()
+        print(float(t), float(v))
+\end{lstlisting}
+The mode \code{"w"} overwrites a file, \code{"a"} appends to it and \code{"r"} (the
+default) reads it. The \code{pathlib} module helps with file names and folders in a way
+that works on both Windows and Linux.
+
+\subsection*{CSV is the common format for tables}
+
+Comma-separated values (CSV) is the most common format for exchanging tables between
+spreadsheets, instruments and programs. Here is the start of a file of tensile test
+results. The numbers are invented for teaching; they are not measurements:
+\lstinputlisting[style=output,title={\footnotesize\sffamily\color{muted}tensile.csv (first lines)},lastline=5]{code/data/tensile.csv}
+The \code{csv} module reads each row as a dictionary keyed by the column names:
+\codefile{Python}{python/read_csv.py}{statistics from a CSV file}
+\outfile{python/read_csv.out}
+For larger tables, the pandas library (Section~\ref{sec:pandas}) is more convenient.
+
+\section{Classes and objects}
+
+A \term{class} defines a new type that bundles data (\term{attributes}) with functions that
+operate on it (\term{methods}). The special method \code{\_\_init\_\_} initialises a new
+object; the first parameter of every method, by convention called \code{self}, is the
+object itself. The following example models pipes and computes the pressure drop with the
+Darcy--Weisbach equation
+\[
+\Delta p = f_D\,\frac{L}{D}\,\frac{\rho v^2}{2},
+\]
+where the Darcy friction factor $f_D$ is $64/\mathrm{Re}$ for laminar flow and is given by
+the Swamee--Jain approximation of the Colebrook equation for turbulent flow.
+\codefile{Python}{python/pipe_flow.py}{a class for pipes}
+\outfile{python/pipe_flow.out}
+The class keeps everything about a pipe in one place, and the loop at the bottom reads
+almost like English. The special method \code{\_\_repr\_\_} controls how an object is
+printed. Classes really pay off when a program has many interacting things: pipes, pumps
+and tanks in a network; particles in a simulation; layers in a neural network.
+
+\py also has \term{data classes}, which save typing when a class mainly stores data:
+\begin{lstlisting}[language=Python]
+from dataclasses import dataclass
+
+@dataclass
+class Material:
+    name: str
+    density: float          # kg/m^3
+    youngs_modulus: float   # Pa
+
+steel = Material("S275", 7850.0, 210e9)
+print(steel)   # Material(name='S275', density=7850.0, youngs_modulus=210000000000.0)
+\end{lstlisting}
+
+\section{NumPy: arrays for numerical computing}
+\label{sec:numpy}
+
+\py lists can hold anything, which makes them flexible but slow for numbers. The
+\term{NumPy} library provides the \code{ndarray}: a block of memory holding numbers of a
+single type, laid out like a C or Fortran array, with fast compiled operations on whole
+arrays. NumPy (2006, by Travis Oliphant, building on the earlier Numeric and numarray
+packages) is the foundation of the entire scientific \py ecosystem.
+
+\subsection*{Create arrays from lists, ranges and grids}
+
+\begin{lstlisting}[language=Python]
+import numpy as np
+
+a = np.array([1.0, 2.0, 3.0])          # from a list
+z = np.zeros(5)                        # [0. 0. 0. 0. 0.]
+o = np.ones((2, 3))                    # 2 x 3 matrix of ones
+r = np.arange(0.0, 1.0, 0.25)          # [0.   0.25 0.5  0.75]  (stop excluded)
+x = np.linspace(0.0, 1.0, 5)           # [0.   0.25 0.5  0.75 1.  ]  (stop included)
+I = np.eye(3)                          # 3 x 3 identity
+R = np.random.default_rng(0).random(4) # 4 random numbers in [0, 1)
+a.shape, a.dtype, o.ndim               # ((3,), dtype('float64'), 2)
+\end{lstlisting}
+
+\subsection*{Arithmetic applies to every element at once}
+
+Arithmetic operators and mathematical functions work \emph{element by element}:
+\begin{lstlisting}[language=Python]
+t = np.linspace(0.0, 2.0, 5)
+y = 5.0 * np.exp(-t) * np.cos(2 * np.pi * t)    # one line, no loop
+T_C = np.array([20.0, 35.5, 50.2])
+T_K = T_C + 273.15                              # [293.15 308.65 323.35]
+\end{lstlisting}
+Note that you must use \code{np.exp}, \code{np.sin} and so on; \code{math.exp} works
+only on single numbers.
+
+When arrays of different shapes are combined, NumPy \term{broadcasts} the smaller one.
+Adding a scalar to an array is the simplest case. A more powerful example: a column of
+$3$ values combined with a row of $4$ values gives a $3\times4$ table:
+\begin{lstlisting}[language=Python]
+D = np.array([[0.05], [0.08], [0.10]])     # 3 x 1 column: diameters (m)
+Q = np.array([0.001, 0.002, 0.004, 0.008]) # 1 x 4 row:   flow rates (m^3/s)
+v = Q / (np.pi * D**2 / 4)                 # 3 x 4 table of velocities
+\end{lstlisting}
+
+\subsection*{Select elements by position or by condition}
+
+NumPy arrays are indexed from 0 and sliced like lists. Multidimensional arrays take one
+index per dimension, separated by commas:
+\begin{lstlisting}[language=Python]
+A = np.arange(12).reshape(3, 4)   # [[0 1 2 3] [4 5 6 7] [8 9 10 11]]
+A[1, 2]          # 6
+A[0, :]          # first row: [0 1 2 3]
+A[:, 1]          # second column: [1 5 9]
+A[1:, 2:]        # [[6 7] [10 11]]
+\end{lstlisting}
+A comparison produces an array of booleans, which can be used to select elements. This is
+called \term{boolean indexing} or masking:
+\begin{lstlisting}[language=Python]
+strength = np.array([276.4, 281.9, 268.7, 273.5, 279.2])
+ok = strength >= 275.0              # [ True  True False False  True]
+strength[ok]                        # [276.4 281.9 279.2]
+np.count_nonzero(ok)                # 3
+\end{lstlisting}
+
+\begin{pitfall}[Common pitfall: slices are views]
+A slice of a NumPy array is a \emph{view} into the same memory, not a copy. Changing
+the slice changes the original: after \code{b = a[0:2]; b[0] = 99}, \code{a[0]} is also 99.
+Use \code{a[0:2].copy()} if you need an independent array. (Slices of \py lists, in
+contrast, are copies.)
+\end{pitfall}
+
+\subsection*{Summaries and linear algebra are single calls}
+
+\begin{lstlisting}[language=Python]
+x = np.array([3.0, 1.0, 4.0, 1.0, 5.0])
+x.sum(), x.mean(), x.std(ddof=1), x.max(), x.argmax()   # ddof=1: sample std
+
+A = np.array([[4.0, -2.0, 1.0],
+              [-2.0, 4.0, -2.0],
+              [1.0, -2.0, 4.0]])
+b = np.array([11.0, -16.0, 17.0])
+x = np.linalg.solve(A, b)        # solve A x = b  ->  [ 1. -2.  3.]
+A @ x                            # matrix-vector product: [ 11. -16.  17.]
+np.linalg.eigvalsh(A)            # eigenvalues of a symmetric matrix
+np.linalg.det(A), np.linalg.norm(b)
+\end{lstlisting}
+The operator \code{@} is matrix multiplication; \code{*} multiplies element by element.
+(In MATLAB it is the other way round: \code{*} is matrix multiplication and \code{.*} is
+element-wise.)
+
+\begin{pitfall}[Common pitfall: never invert a matrix to solve a system]
+To solve $A\mathbf{x} = \mathbf{b}$, use \code{np.linalg.solve(A, b)}, not
+\code{np.linalg.inv(A) @ b}. Solving directly is faster and more accurate. The same
+advice holds in MATLAB (\code{A\textbackslash b}, not \code{inv(A)*b}), R, Julia and
+every other language.
+\end{pitfall}
+
+\subsection*{Vectorised code is many times faster than a loop}
+\label{sec:numpy-speed}
+
+The following program evaluates the polynomial $3x^2 + 2x + 1$ at one million points, first
+with a \py loop and then with one NumPy expression:
+\codefile{Python}{python/numpy_speed.py}{loop versus vectorised code}
+\outfile[title={\footnotesize\sffamily\color{muted}Output (times depend on your computer)}]{python/numpy_speed.out}
+The vectorised version is typically 20 to 100 times faster, because the loop over the
+million elements runs in compiled C code instead of the \py interpreter. This is the most
+important performance rule for \py, MATLAB and R: \emph{let the library do the loops}.
+When an algorithm cannot be vectorised (for example a time-stepping loop where each step
+depends on the previous one), you can use a compiler such as \textbf{Numba}, which
+translates a decorated \py function into machine code, or write the inner loop in C,
+Fortran or Julia.
+
+\section{Plotting with Matplotlib}
+
+\textbf{Matplotlib} (2003, by John D.\ Hunter, a neurobiologist who wanted a free
+alternative to MATLAB plotting) is the standard plotting library. The recommended way to
+use it is to create a figure and axes object explicitly and call methods on the axes. The
+following program produced Figure~\ref{fig:dragresult} in the guide at the front of these notes:
+\codefile{Python}{python/plot_drag.py}{plotting the drag problem}
+A few tips for figures in engineering reports:
+\begin{itemize}
+\item always label the axes \emph{with units};
+\item use a legend or direct labels to identify each curve, and use different marker
+  shapes as well as colours, so the figure also works in black and white;
+\item show measured data as markers and model predictions as lines;
+\item save as PDF or SVG (vector graphics) for reports, PNG at 300 dpi or more for slides;
+\item make the font size in the figure similar to the text it sits in.
+\end{itemize}
+
+\section{SciPy: numerical methods}
+
+\textbf{SciPy} builds on NumPy and provides well-tested numerical methods: root finding and
+optimisation (\code{scipy.optimize}), integration and ODE solvers
+(\code{scipy.integrate}), interpolation, linear algebra, sparse matrices, signal
+processing, statistics, special functions and physical constants
+(\code{scipy.constants}). Most of these routines wrap mature Fortran and C libraries.
+\codefile{Python}{python/scipy_demo.py}{root finding, integration and ODEs with SciPy}
+\outfile{python/scipy_demo.out}
+Compare the last two lines with the Euler results in the drag program: the adaptive
+Runge--Kutta method of \code{solve\_ivp} agrees with the exact solution to all printed
+digits. For real work, use library solvers. Write your own only to learn how they work ---
+which is exactly what we do in ENG 101.
+
+\section{pandas: tables of data}
+\label{sec:pandas}
+
+\textbf{pandas} (2008, by Wes McKinney, then working in finance) provides the
+\code{DataFrame}: a table with named columns of possibly different types, like a
+spreadsheet or a database table, with powerful tools for reading, cleaning, grouping,
+merging and summarising data. It was inspired by R's data frames (Chapter~\ref{ch:r}).
+\codefile{Python}{python/pandas_demo.py}{a first look at pandas}
+\outfile{python/pandas_demo.out}
+In three lines we read the file, added two calculated columns and produced a statistical
+summary per material. pandas reads and writes CSV, Excel, JSON, SQL databases, HDF5 and
+Parquet files. Newer libraries such as Polars offer similar functionality with higher
+speed for very large tables.
+
+\section{Case study: the falling skydiver}
+
+Here is the running example of these notes (page~\pageref{sec:runningexample}) in
+plain \py, using lists and the \code{math} module only. Compare it line by line with the
+versions in the other chapters.
+\codefile{Python}{python/drag.py}{Euler solution of the drag equation}
+\outfile{python/drag.out}
+The error of the Euler method is largest during the acceleration phase (about
+$0.9\unit{m/s}$ at $t = 6\unit{s}$) and decreases as the speed approaches the terminal
+value. Halving $\Delta t$ roughly halves the error, because Euler's method is
+\term{first-order accurate}. Try it.
+
+\section{Case study: a tiny molecular dynamics simulation}
+
+ENG 101 uses a molecular dynamics (MD) simulation of Lennard-Jones particles as a case
+study. The following program shows the core of such a simulation in about 50 lines of
+NumPy. Twenty-five particles interact through the Lennard-Jones potential (in reduced units)
+\[
+U(r) = 4\left[\left(\frac{1}{r}\right)^{12} - \left(\frac{1}{r}\right)^{6}\right],
+\]
+and move according to Newton's equations, integrated with the \term{velocity Verlet}
+algorithm:
+\begin{align*}
+\mathbf{v}\!\left(t+\tfrac{\Delta t}{2}\right) &= \mathbf{v}(t) + \tfrac{\Delta t}{2}\,\mathbf{F}(t),\\
+\mathbf{r}(t+\Delta t) &= \mathbf{r}(t) + \Delta t\, \mathbf{v}\!\left(t+\tfrac{\Delta t}{2}\right),\\
+\mathbf{v}(t+\Delta t) &= \mathbf{v}\!\left(t+\tfrac{\Delta t}{2}\right) + \tfrac{\Delta t}{2}\,\mathbf{F}(t+\Delta t),
+\end{align*}
+where the mass is 1 in reduced units, so the force equals the acceleration.
+\codefile{Python}{python/lj_md.py}{a minimal Lennard-Jones MD code}
+\outfile{python/lj_md.out}
+Kinetic and potential energy exchange continuously, but their sum, the total energy, stays
+nearly constant. Checking energy conservation is the first test of any MD code. 
+
+The line \code{d = pos[:, None, :] - pos[None, :, :]} is the hardest in the program, so
+it is worth reading slowly. \code{pos} has shape $(N, 2)$: one row of $(x, y)$ per
+particle. Inserting \code{None} adds an axis of length 1, so \code{pos[:, None, :]} has
+shape $(N, 1, 2)$ and \code{pos[None, :, :]} has shape $(1, N, 2)$. When the two are
+subtracted, NumPy broadcasts both to shape $(N, N, 2)$, and the element \code{d[i, j]} is
+the vector $\mathbf{r}_i - \mathbf{r}_j$ from particle $j$ to particle $i$. One line
+therefore produces all $N^2$ separation vectors without a loop. Write out the case $N = 2$
+by hand if this is not yet clear. Computing all pairs at once is fast for small $N$; production codes such as LAMMPS (written in C++) use neighbour lists so that
+the cost grows only like $N$, and they run on thousands of processors.
+
+\section{Recursion}
+
+A function may call itself. This is called \term{recursion}, and it is natural for
+problems that are defined in terms of smaller versions of themselves. The factorial
+$n! = n \cdot (n-1)!$ with $0! = 1$ is the classic example:
+\begin{lstlisting}[language=Python]
+def factorial(n):
+    if n == 0:                 # base case: stops the recursion
+        return 1
+    return n * factorial(n - 1)
+
+factorial(20)                  # 2432902008176640000
+\end{lstlisting}
+Every recursive function needs a \emph{base case} that does not call the function again;
+without it, the calls never end. \py limits the depth of recursion (by default to about
+1000 calls) and raises a \code{RecursionError} when the limit is exceeded. In engineering
+codes, recursion appears in adaptive integration (split an interval in two if the error is
+too large), in tree structures such as the octrees used in particle simulations and mesh
+generation, and in divide-and-conquer algorithms such as the fast Fourier transform. For
+simple repetitions a loop is usually clearer and faster: the naive recursive Fibonacci
+function \code{fib(n) = fib(n-1) + fib(n-2)} recomputes the same values so often that
+\code{fib(30)} makes more than a million function calls, whereas a loop needs thirty steps.
+
+\section{Debugging}
+
+Every programmer spends a large part of their time finding errors. Debugging is a skill,
+and it can be learnt. A systematic approach:
+\begin{enumerate}
+\item \textbf{Reproduce the error.} Find the smallest input that shows the problem. A bug
+  that appears only sometimes is often caused by uninitialised data, random numbers without
+  a fixed seed, or the order in which notebook cells were run.
+\item \textbf{Read the message.} A traceback names the type of error, the file and the line.
+  Look at that line, and at the line before it.
+\item \textbf{Form a hypothesis and test it.} ``The velocity becomes negative because the
+  time step is too large.'' Then check: print the value, or change the time step.
+\item \textbf{Divide and conquer.} If a long calculation gives a wrong result, check
+  intermediate values halfway through. Is the error before or after that point? Repeat.
+\item \textbf{Explain the code to someone else} --- a classmate, or even a rubber duck on
+  your desk. Explaining forces you to look at what the code actually does, not what you
+  meant it to do. (Programmers really call this ``rubber duck debugging''.)
+\end{enumerate}
+
+\subsection*{Print first, then reach for the debugger}
+
+The simplest tool is a well-placed \code{print}. The f-string form \code{print(f"\{v=\}")}
+prints both the name and the value of a variable. For more than a few prints, use a
+\term{debugger}. In VS Code, Spyder or PyCharm, click to the left of a line number to set a
+\term{breakpoint}, then start the program in debug mode. Execution stops at the breakpoint,
+and you can inspect every variable, step through the code line by line (\emph{step over}),
+enter a function call (\emph{step into}), and continue to the next breakpoint. From the
+command line, insert the built-in function \code{breakpoint()} where you want the program to
+stop; this opens \py's text-based debugger \code{pdb}:
+\begin{lstlisting}[language=Python]
+for n in range(n_steps):
+    if v[n] < 0:
+        breakpoint()        # stops here; type p v[n] to print, c to continue, q to quit
+    v[n + 1] = v[n] + dt * acceleration(v[n])
+\end{lstlisting}
+In Jupyter, the magic command \code{\%debug} run after an exception opens the debugger at
+the place where the error occurred.
+
+\begin{tryit}
+Introduce a deliberate bug into \file{drag.py}: change \code{v[n + 1]} to \code{v[n]} in the
+update line. Run the program. What do you see? Use the debugger to step through the first
+three iterations and explain the output.
+\end{tryit}
+
+\section{Working with notebooks}
+
+Jupyter notebooks are excellent for exploration and for explaining an analysis, and ENG 101
+uses them for case studies. A few habits make them much more reliable:
+\begin{itemize}
+\item Put all imports and parameters in the first cells, so that a reader sees at once
+  what the notebook depends on.
+\item Run cells from top to bottom. Before saving or sharing, use ``Restart kernel and run
+  all'' to check that the notebook works in order.
+\item Keep cells short; move long functions into a \file{.py} module and import them. Code
+  in modules can be tested and reused by other notebooks.
+\item Use Markdown cells to say \emph{why} you do something, and \LaTeX\ notation
+  (\code{\$v\_t = \textbackslash sqrt\{mg/c\}\$}) to write equations.
+\item Keep raw data files unchanged; save processed data and figures under new names.
+\end{itemize}
+
+\section{Writing good Python}
+
+\subsection*{Follow the common style so that others can read your code}
+
+\py has an official style guide, \textbf{PEP~8}. Its main points: four spaces per
+indentation level; lines shorter than about 80--100 characters; \code{lower\_case} names for
+variables and functions, \code{CapitalisedWords} for classes and \code{UPPER\_CASE} for
+constants; spaces around operators; and imports at the top of the file. Tools such as
+\code{ruff} and \code{black} check and format code automatically.
+
+\subsection*{Type hints document what a function expects}
+
+Since \py~3.5 you can annotate the expected types of arguments and return values:
+\begin{lstlisting}[language=Python]
+import numpy as np
+
+def kinetic_energy(m: float, v: np.ndarray) -> float:
+    return 0.5 * m * float(np.sum(v**2))
+\end{lstlisting}
+The interpreter ignores these hints at run time, but editors use them to warn you about
+mistakes before you run the code, and tools such as \code{mypy} check them systematically.
+They are also excellent documentation.
+
+\subsection*{A test compares a result with an answer you already know}
+
+A program you have not tested is a program you should not trust. The simplest test
+compares a computed result with a known answer:
+\begin{lstlisting}[language=Python]
+# test_drag.py -- run with:  pytest
+import math
+from drag_lib import terminal_velocity
+
+def test_terminal_velocity():
+    assert math.isclose(terminal_velocity(80.0, 0.25), 56.0285641, rel_tol=1e-7)
+
+def test_terminal_velocity_scales_with_sqrt_mass():
+    v1 = terminal_velocity(80.0, 0.25)
+    v4 = terminal_velocity(320.0, 0.25)
+    assert math.isclose(v4, 2 * v1)
+\end{lstlisting}
+The \code{pytest} tool finds functions whose names start with \code{test\_} and runs them.
+Good tests use exact solutions, limiting cases, conservation laws (as in the MD example)
+and \emph{scaling} relations like the second test above.
+
+\section{Strengths and weaknesses}
+\label{sec:python-strengths}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Strengths} & \textbf{Weaknesses}\\
+\midrule
+Easy to learn and read; short programs & Pure-\py loops are slow (10--100$\times$ slower than C)\\
+Free, open source, runs everywhere & Dynamic typing hides some errors until run time\\
+Huge ecosystem for science, data and AI & Package and environment management can be confusing\\
+Interactive use and notebooks & Not suitable for hard real-time or small embedded systems\\
+Excellent glue to C, C++, Fortran and to engineering software & The Global Interpreter Lock limits multi-threaded speed (being removed in recent versions)\\
+Very large community; most AI tools know it well & Deployment as a standalone application is clumsy\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{engnote}[Engineering note: Python is often the conductor, not the orchestra]
+In a typical research or industrial workflow, \py prepares input files, launches a
+simulation written in Fortran or C++, reads the results, analyses them with NumPy and
+pandas, and makes the plots for the report. \py coordinates; the compiled programs do the
+heavy computing. Knowing a little about those compiled languages (the next part of these
+notes) makes you much more effective in that role.
+\end{engnote}
+
+\section{Further reading}
+\begin{itemize}
+\item The official \py tutorial, \url{https://docs.python.org/3/tutorial/}.
+\item A.~B.~Downey, \emph{Think Python}, 3rd ed., O'Reilly, 2024 (free online).
+\item J.~VanderPlas, \emph{Python Data Science Handbook}, 2nd ed., O'Reilly, 2022 (free online).
+\item J.~Kiusalaas, \emph{Numerical Methods in Engineering with Python 3}, Cambridge
+  University Press, 2013.
+\item The NumPy, SciPy, Matplotlib and pandas documentation, each with a ``getting
+  started'' guide.
+\end{itemize}
+
+\begin{exercises}
+\item Write a script that asks for a mass and a drag coefficient and prints the terminal
+  velocity with two decimals. What happens if the user types a negative drag coefficient?
+  Add a check that raises a \code{ValueError} with a helpful message.
+\item Write a function \code{celsius\_to\_fahrenheit(T)} and use a list comprehension to
+  convert the list \code{[-40, 0, 37, 100]}. Which value is the same on both scales?
+\item Modify \file{drag.py} so that it runs with $\Delta t = 0.5$, $0.25$, $0.125$ and
+  $0.0625\unit{s}$ and prints the maximum absolute error for each. Show that the error is
+  roughly proportional to $\Delta t$.
+\item Replace the lists in \file{drag.py} with NumPy arrays and compute the exact solution
+  for all time points with a single vectorised expression.
+\item Use \code{np.linalg.solve} to find the currents in a circuit with three loops whose
+  mesh equations you write down from a circuit diagram of your choice. Check the answer by
+  substituting it back into the equations.
+\item Extend the \code{Pipe} class with a method \code{head\_loss(Q)} that returns the
+  pressure drop expressed as a height of water, $h = \Delta p/(\rho g)$. Then compute how the
+  pressure drop of a 50~m pipe with $D = 0.05\unit{m}$ varies with flow rate for $Q$ between
+  $0.0005$ and $0.01\unit{m^3/s}$, and plot it on log--log axes. What slope do you expect?
+\enlargethispage{2\baselineskip}
+\item Read \file{tensile.csv} with pandas, compute the yield load (in kN) of each specimen
+  from its diameter, and find the specimen with the largest yield load.
+\item In \file{lj\_md.py}, change the time step to $0.02$ and then $0.05$. What happens to
+  the total energy? Explain why a time step that is too large is dangerous in a
+  simulation.
+\end{exercises}

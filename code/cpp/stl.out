@@ -1,0 +1,8 @@
+sorted: 11.9 12.6 13.2 14 15.8
+mean = 13.5 kN
+3 loads exceed 13 kN
+range: 11.9 to 15.8 kN
+aluminium: 2700 kg/m^3
+copper: 8960 kg/m^3
+steel: 7850 kg/m^3
+water: 998 kg/m^3

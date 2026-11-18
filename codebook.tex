@@ -1,0 +1,116 @@
+% Extensions for a programming book. Load after booksetup.tex. Colour edition.
+\colorlet{nublue}{accent}
+\colorlet{nugold}{gold}
+% ---------------- listings: languages not built in --------------------
+\lstdefinelanguage{JavaScript}{
+  morekeywords={break,case,catch,class,const,continue,debugger,default,delete,do,
+    else,export,extends,finally,for,function,if,import,in,instanceof,let,new,
+    return,super,switch,this,throw,try,typeof,var,void,while,with,yield,
+    async,await,of,null,true,false,undefined,static,get,set},
+  morecomment=[l]{//}, morecomment=[s]{/*}{*/},
+  morestring=[b]', morestring=[b]", morestring=[b]`,
+  sensitive=true}
+\lstdefinelanguage{TypeScript}[]{JavaScript}{
+  morekeywords={interface,type,enum,implements,private,public,protected,readonly,
+    number,string,boolean,any,void,never,unknown}}
+\lstdefinelanguage{Julia}{
+  morekeywords={abstract,begin,break,catch,const,continue,do,else,elseif,end,export,
+    false,finally,for,function,global,if,import,let,local,macro,module,mutable,
+    quote,return,struct,true,try,using,while,in,where,nothing},
+  morecomment=[l]{\#}, morecomment=[s]{\#=}{=\#},
+  morestring=[b]", sensitive=true}
+\lstdefinelanguage{Rust}{
+  morekeywords={as,break,const,continue,crate,else,enum,extern,false,fn,for,if,impl,
+    in,let,loop,match,mod,move,mut,pub,ref,return,self,Self,static,struct,super,
+    trait,true,type,unsafe,use,where,while,f64,f32,i32,i64,u32,u64,usize,bool,
+    String,Vec,Option,Some,None,Result,Ok,Err},
+  morecomment=[l]{//}, morecomment=[s]{/*}{*/}, morestring=[b]", sensitive=true}
+\lstdefinelanguage{Go}{
+  morekeywords={break,case,chan,const,continue,default,defer,else,fallthrough,for,
+    func,go,goto,if,import,interface,map,package,range,return,select,struct,
+    switch,type,var,float64,int,string,bool,true,false,nil,error},
+  morecomment=[l]{//}, morecomment=[s]{/*}{*/},
+  morestring=[b]", morestring=[b]`, sensitive=true}
+\lstdefinelanguage{StructuredText}{
+  morekeywords={PROGRAM,END_PROGRAM,VAR,END_VAR,VAR_INPUT,VAR_OUTPUT,IF,THEN,ELSIF,
+    ELSE,END_IF,FOR,TO,BY,DO,END_FOR,WHILE,END_WHILE,CASE,OF,END_CASE,
+    FUNCTION_BLOCK,END_FUNCTION_BLOCK,FUNCTION,END_FUNCTION,BOOL,INT,REAL,TIME,
+    TRUE,FALSE,AND,OR,NOT,TON,R_TRIG},
+  morecomment=[s]{(*}{*)}, morecomment=[l]{//}, morestring=[b]', sensitive=false}
+\lstdefinelanguage{Modelica}{
+  morekeywords={model,end,parameter,Real,equation,der,initial,algorithm,annotation,
+    connector,flow,extends,import,within,package,block,input,output,constant},
+  morecomment=[l]{//}, morecomment=[s]{/*}{*/}, morestring=[b]", sensitive=true}
+\lstdefinelanguage{VBA}{
+  morekeywords={Sub,End,Function,Dim,As,Double,Integer,Long,String,For,To,Next,If,
+    Then,Else,ElseIf,Do,While,Loop,Set,Range,Cells,Return,Exit,Step,Boolean,
+    Const,Private,Public,Wend,Variant},
+  morecomment=[l]{'}, morestring=[b]", sensitive=false}
+\lstdefinelanguage{GCode}{
+  morekeywords={G00,G01,G02,G03,G17,G21,G90,G91,M03,M05,M30,G0,G1,F,S},
+  morecomment=[s]{(}{)}, morecomment=[l]{;}, sensitive=false}
+
+
+% ---------------- listings: house style for a code-heavy book -----------
+% 10 pt code (\footnotesize in this setup) keeps about 88 characters per line.
+\lstset{basicstyle=\footnotesize\ttfamily,keywordstyle=\bfseries\color{accent},
+  commentstyle=\itshape\color{codegreen},stringstyle=\color{coderust},
+  backgroundcolor=\color{codebg},rulecolor=\color{codeframe},
+  upquote=true,tabsize=4,postbreak={\mbox{$\hookrightarrow$\space}},
+  extendedchars=true,
+  literate={-}{-}1 {*}{*}1 {σ}{{$\sigma$}}1 {ε}{{$\varepsilon$}}1 {π}{{$\pi$}}1
+    {μ}{{$\mu$}}1 {ρ}{{$\rho$}}1 {α}{{$\alpha$}}1 {Δ}{{$\Delta$}}1 {°}{{$^\circ$}}1}
+\lstdefinestyle{numbered}{numbers=left,numberstyle=\scriptsize\sffamily\color{muted},numbersep=7pt,xleftmargin=20pt}
+% program output: pale blue panel with a blue bar
+\lstdefinestyle{output}{language={},frame=leftline,framerule=2pt,rulecolor=\color{accent},
+  backgroundcolor=\color{pale},basicstyle=\footnotesize\ttfamily\color{ink},
+  keywordstyle={},commentstyle={},stringstyle={},xleftmargin=8pt}
+% terminal commands: dark panel with light text
+\lstdefinestyle{shell}{language={},frame=single,rulecolor=\color{navy},backgroundcolor=\color{navy},
+  basicstyle=\footnotesize\ttfamily\color{white},keywordstyle={},
+  commentstyle={\itshape\color{white!60!navy}},stringstyle={}}
+% \codefile[opts]{language}{path under code/}{note}  and  \outfile[opts]{path under code/}
+\newcommand{\codefile}[4][]{\lstinputlisting[language={#2},style=numbered,
+  title={\footnotesize\sffamily\bfseries\color{accent}\texttt{\detokenize{#3}}\normalfont\sffamily\color{muted}\enspace #4},#1]{code/#3}}
+\newcommand{\outfile}[2][]{\lstinputlisting[style=output,title={\footnotesize\sffamily\color{muted}Output},#1]{code/#2}}
+
+% ---------------- boxed notes: one shape, one colour per kind ---------------
+% \begin{notebox}{title}{main colour}{background}
+\newtcolorbox{notebox}[3]{colback=#3,colframe=#2!40,title={#1},colbacktitle=#3,coltitle=#2!85!black,
+  fonttitle=\sffamily\bfseries,borderline west={2.5pt}{0pt}{#2},titlerule=0pt,boxrule=0.35pt}
+\newenvironment{keyidea}[1][Key idea]{\begin{notebox}{#1}{accent}{pale}}{\end{notebox}}
+\newenvironment{pitfall}[1][Common pitfall]{\begin{notebox}{#1}{alert}{palealert}}{\end{notebox}}
+\newenvironment{engnote}[1][Engineering note]{\begin{notebox}{#1}{gold}{warm}}{\end{notebox}}
+\newenvironment{history}[1][A little history]{\begin{notebox}{#1}{muted}{paleslate}}{\end{notebox}}
+\newenvironment{tryit}[1][At the computer]{\begin{notebox}{Practice: #1}{okgreen}{palegreen}}{\end{notebox}}
+\renewtcolorbox{researchquestion}{colback=pale,colframe=accent!40,borderline west={2.5pt}{0pt}{gold},
+  fontupper=\itshape\color{accent!80!black}}
+% Language fact sheet: blue title bar, pale panel, two columns.
+\newenvironment{factsheet}[1]{\begin{tcolorbox}[colback=pale,colframe=accent,boxrule=0.5pt,
+  title={#1 at a glance},colbacktitle=accent,coltitle=white,fonttitle=\sffamily\bfseries,titlerule=0pt,
+  left=8pt,right=8pt]
+  \small\renewcommand{\arraystretch}{1.12}%
+  \begin{tabular}{@{}>{\leavevmode\sffamily\bfseries\color{accent}}p{.22\linewidth}>{\RaggedRight\arraybackslash}p{.73\linewidth}@{}}}
+  {\end{tabular}\end{tcolorbox}}
+
+% ---------------- exercises: "Try it yourself", linked to the answers ------
+\newcounter{exercise}[chapter]
+\renewcommand{\theexercise}{\thechapter.\arabic{exercise}}
+\newcommand{\exitem}{\refstepcounter{exercise}\label{ex:\theexercise}%
+  \textbf{\sffamily\color{accent}Exercise \theexercise.}}
+\newenvironment{exercises}{\section*{Try it yourself}%
+  \begin{list}{\exitem}{\leftmargin=0pt\itemindent=0pt\labelwidth=0pt\labelsep=0.5em\itemsep=7pt\topsep=4pt\listparindent=0pt
+  \renewcommand{\makelabel}[1]{##1}}}{\end{list}}
+\newcommand{\AnswerRef}[1]{\hyperref[ex:#1]{\textsf{Exercise #1}}}
+
+% ---------------- shorthand ------------------------------------------------
+\newcommand{\py}{Python\xspace}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\sq}{\textquotesingle}   % straight quote for inline code
+\newcommand{\file}[1]{\texttt{#1}}
+\newcommand{\term}[2][]{\textbf{\color{accent}#2}\if\relax\detokenize{#1}\relax\index{#2}\else\index{#1}\fi}
+\newcommand{\unit}[1]{\,\mathrm{#1}}
+\newcommand{\LearningOutcomes}[1]{\par\textbf{\color{accent}Learning outcomes.} #1\par}
+
+% Line under the question box of Chapters 4--14
+\newcommand{\OrientationNote}{\par{\small\sffamily\color{muted}Orientation chapter: read it to recognise the language and what it is for, not to memorise its syntax.}\par}

@@ -1,0 +1,4 @@
+n = 10
+mean = 276.85 MPa
+std  = 4.91 MPa
+range = [268.7, 284.6] MPa

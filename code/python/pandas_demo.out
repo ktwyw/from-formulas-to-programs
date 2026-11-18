@@ -1,0 +1,9 @@
+  specimen material  diameter_mm  yield_MPa
+0      T01   Al6061        10.02      276.4
+1      T02   Al6061         9.98      281.9
+2      T03   Al6061        10.01      268.7
+
+          count    mean   std    min    max
+material                                   
+Al6061       10  276.85  4.91  268.7  284.6
+S275          8  287.38  5.29  279.8  296.0

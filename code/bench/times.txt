@@ -1,0 +1,14 @@
+C 0.0591
+Fortran 0.057
+C++ 0.0607
+Rust 0.0588
+Go 0.0695
+Java 0.1956
+JavaScript 0.0737
+C#(Mono) 0.4088
+Python+NumPy 0.1122
+Python-loop 0.8526
+Octave-vec 0.1532
+R-vec 0.3448
+R-loop 0.3811
+Octave-loop 23.6632

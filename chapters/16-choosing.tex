@@ -1,0 +1,221 @@
+% =====================================================================
+\BookChapter[Choosing a Language]{Choosing a Language and Writing Code Others Can Trust}
+\label{ch:choosing}
+
+\begin{researchquestion}
+Which language should you use for a given task, and how do you make the result trustworthy?
+\end{researchquestion}
+% =====================================================================
+
+You have now seen a dozen languages. This final chapter steps back and asks two practical
+questions. Given an engineering task, which language should you use? And whatever the
+language, how do you write code that you, your colleagues and your clients can trust?
+
+\LearningOutcomes{Choose a language for a task by asking who will use the code, where it must run and how long it must live; learn a new language systematically; keep code under version control; test a calculation against known answers and limiting cases; document code so that results can be reproduced; and use AI coding assistants without giving up responsibility for the result.}
+
+\section{Questions to ask before choosing}
+
+There is no best language, only a best language \emph{for a given task, team and
+situation}. The following questions usually decide the matter.
+
+\begin{enumerate}
+\item \textbf{What already exists?} If your company's simulation tool is scripted in \py,
+  or your laboratory's instruments come with a LabVIEW driver, or your supervisor's
+  solver is in Fortran, that is usually the strongest argument. Reusing tested code beats
+  writing new code.
+\item \textbf{Who will use and maintain it?} Code outlives its author's interest in it. A
+  \py script can be read by most engineers; a clever C++ template library may be readable
+  only by you. Write for the person who will inherit your code.
+\item \textbf{Where must it run?} A web page needs JavaScript. A microcontroller needs C,
+  C++ or Rust. A PLC needs IEC 61131-3 languages. A cluster job can use almost anything,
+  but Fortran, C++ and \py dominate. A colleague without a MATLAB licence cannot run your
+  MATLAB code.
+\item \textbf{How fast must it be?} Most engineering scripts run in seconds, and speed
+  does not matter. If it does, first find out \emph{where} the time is spent (profiling),
+  then vectorise, use a library, or move the hot loop into a compiled language
+  (Figure~\ref{fig:benchmark}).
+\item \textbf{How safe must it be?} Software that controls a vehicle, a medical device or
+  a chemical plant is subject to standards (ISO 26262, IEC 62304, IEC 61508) that restrict
+  languages and require rigorous verification. There, C with MISRA rules, Ada/SPARK, Rust,
+  certified code generators (Simulink, SCADE) and PLC languages are typical.
+\item \textbf{What libraries do you need?} Statistics: R or \py. Machine learning: \py.
+  Control design: MATLAB or \py. Differential equations at scale: Julia, \py, C++ or
+  Fortran. Symbolic derivations: Wolfram, SymPy or Maple.
+\item \textbf{How long will it live?} A throw-away analysis can be a notebook. A tool used
+  by a hundred people for ten years needs a language with a stable future, tests,
+  documentation and version control.
+\end{enumerate}
+
+\section{A rough decision guide}
+
+Table~\ref{tab:ch16:guide} gives a first suggestion for some common tasks. Treat it as a
+starting point for the questions above, not as a rule.
+
+\begin{table}[htbp]
+\centering\small
+\caption[{A rough decision guide}]{A rough decision guide. The right-hand column names the
+languages to consider first; local habits and existing code often decide otherwise.}
+\label{tab:ch16:guide}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{5.6cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{If you need to \ldots} & \textbf{consider first \ldots}\\
+\midrule
+analyse data, automate a task, prototype a model, drive other software & \py\\
+do statistics, designed experiments, reliability analysis & R (or \py)\\
+design control systems, process signals, model-based design & MATLAB/Simulink (or \py)\\
+derive formulas, solve equations symbolically & Wolfram Language, SymPy, Maple\\
+write a fast numerical solver from scratch & Julia, modern Fortran, C++\\
+extend an existing large simulation code & the language it is written in\\
+program a microcontroller or write firmware & C, C++, Rust\\
+program an industrial controller (PLC) & Structured Text, Ladder Diagram\\
+design digital hardware & VHDL, Verilog\\
+build an interactive web tool or dashboard & JavaScript/TypeScript (or \py with Streamlit/Dash, R with Shiny)\\
+build a Windows desktop application or a CAD plug-in & C\#\\
+build an Android or iOS app & Kotlin, Swift\\
+query or manage a database & SQL\\
+automate a cluster workflow & Bash (plus \py)\\
+model a multi-domain physical system & Modelica, Simscape, ModelingToolkit\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{How to learn a new language quickly}
+
+Sooner or later you will need a language you do not know. A systematic approach:
+\begin{enumerate}
+\item \textbf{Get ``Hello, world'' running.} Install the tools and learn the
+  edit--run cycle. This is often the hardest step.
+\item \textbf{Map the core features} using the checklist from Chapter~\ref{ch:intro}:
+  types, variables, operators, \code{if}, loops, functions, arrays, I/O, modules, errors.
+  Table~\ref{tab:syntax} and the reference guides at the back help.
+\item \textbf{Translate a program you already understand}, such as the drag or Rosetta
+  programs of these notes. Because you know what the output must be, every difference
+  teaches you something.
+\item \textbf{Read idiomatic code} --- the standard library, well-known packages, the
+  official tutorial --- to learn how experienced users write the language, not just what
+  compiles.
+\item \textbf{Learn the tools}: the package manager, the debugger, the test framework, the
+  formatter.
+\end{enumerate}
+
+\section{Version control with Git}
+
+\term[version control]{Version control} records every change to a set of files, who made it and why, and
+lets you go back to any earlier state. It is essential for code, and useful for any text
+files (\LaTeX\ reports, data-processing scripts, configuration). \textbf{Git} is the
+standard tool; \textbf{GitHub}, \textbf{GitLab} and similar services host Git
+repositories online and support collaboration.
+\begin{lstlisting}[style=shell]
+$ git init                         # start tracking the current folder
+$ git add drag.py                  # stage a file for the next snapshot
+$ git commit -m "Euler solver for drag problem"   # record the snapshot
+$ git log --oneline                # list the history
+$ git diff                         # what changed since the last commit?
+$ git checkout -b smaller-dt       # create a branch to try an idea
+$ git push origin main             # upload to GitHub/GitLab
+\end{lstlisting}
+Commit often, with messages that explain \emph{why} something changed. Never commit
+passwords or large generated data files. Graphical tools such as GitHub Desktop and the Git
+support built into VS Code make all of this easier.
+
+\section{Testing}
+
+A calculation you have not checked is a guess. Chapter~\ref{ch:python} introduced
+automated tests; here are the kinds of checks engineers should build into their programs,
+in any language:
+\begin{itemize}
+\item \textbf{Known solutions}: compare with an exact solution (as we did with
+  $\tanh$), a textbook example, or a hand calculation.
+\item \textbf{Limiting cases}: with zero drag the speed must be $gt$; with zero load the
+  deflection must be zero.
+\item \textbf{Conservation laws and symmetries}: energy in the MD simulation, mass and
+  energy balances in process models, symmetric stiffness matrices.
+\item \textbf{Convergence}: halving the time step or refining the mesh should change the
+  result by the amount the method's order predicts.
+\item \textbf{Units and dimensions}: check every formula; use unit-aware libraries where
+  possible.
+\item \textbf{Independent implementation}: as in Chapter~\ref{ch:rosetta}, a second
+  implementation in another language or by another person catches errors that a single
+  author does not see.
+\item \textbf{Regression tests}: once a result is verified, store it and check that future
+  versions of the code still reproduce it.
+\end{itemize}
+Every language has test frameworks: \code{pytest} (\py), \code{testthat} (R), MATLAB's
+\code{matlab.unittest}, JUnit (Java), xUnit/NUnit (C\#), GoogleTest and Catch2 (C++),
+\code{pFUnit} and \code{test-drive} (Fortran), Julia's \code{Test}, Rust's built-in
+\code{cargo test}, and Jest or Vitest (JavaScript).
+
+\section{Documentation and reproducibility}
+
+Good engineering code is \emph{documented}: every function says what it does, what its
+inputs and outputs are, and \emph{in which units}; a README file explains how to install
+and run the program; and assumptions and limitations are written down. Good engineering
+results are \emph{reproducible}: someone else, or you next year, can regenerate every
+number and figure from the raw data and the code. That requires recording the versions of
+the language and of every package (\file{requirements.txt}, \file{environment.yml},
+\file{renv.lock}, \file{Project.toml}, \file{Cargo.lock}), fixing random seeds, and keeping
+code, data and results under version control. Publishing code and data alongside a report
+or paper, in a public repository with a clear licence, is increasingly expected.
+
+\section{AI coding assistants}
+\label{sec:ai-assistants}
+
+Since about 2022, AI assistants based on large language models have become part of
+everyday programming. They can explain unfamiliar code, translate a program from MATLAB to
+\py, write a first version of a function from a description, suggest tests, and find bugs.
+They know every language in these notes. Used well, they make you much more productive and
+are an excellent tutor for learning a new language.
+
+They can also be confidently wrong. An assistant may invent a function that does not
+exist, use a formula with a wrong constant, mix up 0- and 1-based indices when translating,
+or produce code that runs and gives a plausible but incorrect answer --- the most dangerous
+kind of error (Chapter~\ref{ch:howcoderuns}). The engineering responsibility for a result
+remains with the engineer who signs it. Some rules for using AI assistants:
+\begin{enumerate}
+\item \textbf{Understand every line} you use. If you could not explain it to a colleague,
+  you cannot vouch for it. This is why reading code in many languages --- the purpose of
+  these notes --- matters more, not less, in the age of AI.
+\item \textbf{Test generated code} with the same checks as your own: known solutions,
+  limiting cases, units.
+\item \textbf{Give precise specifications}: inputs, outputs, units, the method to use, and
+  an example with the expected answer.
+\item \textbf{Follow your course and employer rules} on what may be shared with external
+  services (confidential data, proprietary code) and on how AI use must be acknowledged in
+  assessed work.
+\end{enumerate}
+
+\section{Software licences}
+
+When you use or share code, its \term{licence} decides what you may do with it. Open-source
+licences fall into two broad groups. \emph{Permissive} licences (MIT, BSD, Apache 2.0) allow
+almost any use, including in commercial products, provided the copyright notice is kept.
+\emph{Copyleft} licences (GPL, LGPL) require that modified versions you distribute are
+released under the same licence. Data and documents are often shared under Creative Commons
+licences (CC BY 4.0, for example, requires attribution). Commercial software (MATLAB,
+Mathematica, many simulation packages) comes with licence terms that may restrict who can
+run it and for what purpose. Check before you build on someone else's code.
+
+\section{A last word}
+
+Choosing a language is an engineering decision, and it deserves the same care as choosing
+a material or a safety factor. Learn \py well, learn to read the others, and check what
+you compute. The Epilogue that follows looks at where these languages came from and
+where they may be going.
+
+\begin{exercises}
+\item For each of the following tasks, choose a language and justify your choice in two or
+  three sentences: (a) logging and plotting data from a temperature sensor on a Raspberry
+  Pi; (b) a cost estimate that the finance department will check; (c) a controller for a
+  conveyor belt; (d) a 3D simulation of airflow around a building on a cluster; (e) an
+  interactive web page that lets clients size a heat exchanger; (f) a statistical analysis
+  of fatigue-test results.
+\item Create a GitHub repository for your ENG 101 code. Add a README that explains how to
+  run each program, a \file{requirements.txt}, and a test for at least one function.
+\item Ask an AI assistant to translate \file{drag.m} into \py. Check the translation line
+  by line. Did it handle the indices and the time vector correctly? Did it produce the
+  same table?
+\item Write a test that checks the convergence order of the Euler method for the drag
+  problem: the error at $t = 6\unit{s}$ should halve when $\Delta t$ is halved.
+\item Read the licence of NumPy and of one commercial program you use. What may you do
+  with each, and what may you not?
+\end{exercises}

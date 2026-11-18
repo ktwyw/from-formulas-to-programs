@@ -1,0 +1,282 @@
+% =====================================================================
+\BookChapter[R]{R: A Language Built for Statistics}
+\label{ch:r}
+
+\begin{researchquestion}
+How do you get from a table of measurements to a conclusion that statistics can support?
+\end{researchquestion}
+\OrientationNote
+% =====================================================================
+
+\begin{factsheet}{R}
+First appeared & 1993 (version 1.0 in 2000); based on the S language (Bell Labs, 1976)\\
+Designed by & Ross Ihaka and Robert Gentleman, University of Auckland; now the R Core Team\\
+Paradigms & functional, array (vectorised), object-oriented (S3, S4, R6), statistical\\
+Typing & dynamic\\
+Execution & interpreted (bytecode compiled)\\
+File extensions & \file{.R} (scripts), \file{.Rmd} and \file{.qmd} (R Markdown / Quarto reports), \file{.rds} (data)\\
+Cost & free and open source (GPL)\\
+Used for & statistics, design of experiments, quality control, reliability analysis,
+  data analysis and visualisation, bioinformatics, epidemiology, environmental and
+  hydrological modelling, econometrics\\
+Famous software & ggplot2, the tidyverse (dplyr, tidyr, readr), Shiny, Bioconductor,
+  the CRAN repository of more than 20\,000 packages\\
+\end{factsheet}
+
+R is a language and environment for statistical computing and graphics. Where \py is a
+general-purpose language that became good at data analysis, R was designed by
+statisticians, for statistics, from the start. Almost every statistical method ever
+published is available in R, often written by the statisticians who invented it. For
+engineers, R is the natural tool for designed experiments, quality and reliability
+analysis, environmental data, and any work where careful statistics matters more than raw
+speed.
+
+\LearningOutcomes{Create and index vectors in R; handle missing values; store measurements in a data frame and summarise them by group; describe a statistical model with a formula; run a t-test and a linear regression and read their output; and decide when R is a better choice than Python.}
+
+\section{History and philosophy}
+
+\begin{history}
+In 1976 John Chambers and colleagues at Bell Labs (the same laboratory that produced C
+and Unix) created S, a language for interactive data analysis. S became a commercial
+product (S-PLUS). In 1993 two statisticians at the University of Auckland, Ross Ihaka
+and Robert Gentleman, wrote a free implementation of a language much like S for teaching,
+and named it R --- partly after their first names, partly as a play on S. They released it
+under the GNU General Public License in 1995. A worldwide ``R Core Team'' has developed it
+since, and the Comprehensive R Archive Network (CRAN) collects contributed packages.
+\end{history}
+
+R's design reflects its purpose. The fundamental data structure is the \emph{vector};
+missing data are part of the language; statistical models are described by
+\emph{formulas} such as \code{y \textasciitilde\ x}; and the \emph{data frame} --- a table
+whose columns may have different types --- was R's invention long before pandas copied it.
+R is also strongly influenced by the functional language Scheme: functions are values,
+and most operations return new objects rather than modifying old ones.
+
+\section{Getting started}
+
+Install R from \url{https://cran.r-project.org} and then \textbf{RStudio} (or
+\textbf{Positron}), the IDE that almost everyone uses, from Posit
+(\url{https://posit.co}). R also works in VS Code and in Jupyter notebooks.
+\codefile{R}{r/hello.R}{hello world}
+\begin{lstlisting}[style=shell]
+$ Rscript hello.R
+\end{lstlisting}
+\outfile{r/hello.out}
+The \code{[1]} in front of printed output means ``the first element of this vector is
+shown here''; long vectors are printed over several lines, each starting with the index of
+its first element. \code{cat} prints without quotes and without the index.
+
+\section{The language in brief}
+
+\subsection*{Every value is a vector}
+
+R's traditional assignment operator is the arrow \code{<-} (\code{=} also works). Comments
+start with \code{\#}. There are no scalars: a single number is a vector of length one. The
+function \code{c()} (``combine'') creates vectors. Here is an interactive session, with
+R's output shown after each command:
+\begin{lstlisting}[language=R]
+> x <- c(276.4, 281.9, 268.7, 273.5, 279.2)   # yield strengths, MPa
+> x[1]                      # indices start at 1
+[1] 276.4
+> x[2:4]                    # 2:4 is the vector 2, 3, 4 (end included)
+[1] 281.9 268.7 273.5
+> x[-1]                     # a NEGATIVE index REMOVES elements
+[1] 281.9 268.7 273.5 279.2
+> x[x > 275]                # logical indexing
+[1] 276.4 281.9 279.2
+> mean(x); sd(x); range(x)
+[1] 275.94
+[1] 5.116933
+[1] 268.7 281.9
+> x - mean(x)               # vectorised: the scalar is "recycled"
+[1]  0.46  5.96 -7.24 -2.44  3.26
+\end{lstlisting}
+
+\begin{pitfall}[Common pitfall: negative indices]
+In \py, \code{x[-1]} is the \emph{last} element. In R, \code{x[-1]} is \emph{everything
+except the first} element. The last element in R is \code{x[length(x)]}. This is a
+frequent source of confusion when moving between the two languages.
+\end{pitfall}
+
+\subsection*{Missing measurements are part of the language}
+
+Real measurement data have gaps: a sensor failed, a specimen broke in the grips. R has a
+special value \code{NA} (``not available'') for this, and statistical functions treat it
+honestly:
+\begin{lstlisting}[language=R]
+> y <- c(1.2, NA, 3.4)
+> mean(y)
+[1] NA
+> mean(y, na.rm = TRUE)     # explicitly ignore missing values
+[1] 2.3
+\end{lstlisting}
+The mean of a set containing an unknown number is unknown, so R returns \code{NA} unless
+you say otherwise. This prevents the silent errors that occur when a missing value is
+recorded as zero.
+
+\subsection*{Six data structures cover almost everything}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Structure} & \textbf{Description}\\
+\midrule
+vector & elements of one type: \code{numeric} (double), \code{integer} (\code{5L}),
+  \code{character}, \code{logical} (\code{TRUE}/\code{FALSE}), \code{complex}\\
+factor & a categorical variable with a fixed set of levels (e.g.\ material, batch, operator)\\
+matrix, array & a vector with dimensions; column-major, like Fortran\\
+list & an ordered collection of objects of any types (like a \py list or dictionary)\\
+data frame & a list of equal-length columns: R's central table structure\\
+function & a function is an object like any other\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Matrix algebra uses \code{\%*\%} for the matrix product (\code{*} is element-wise),
+\code{t()} for transpose and \code{solve(A, b)} for linear systems.
+
+\subsection*{Functions return their last value and work on whole vectors}
+
+R has \code{if}/\code{else}, \code{for}, \code{while} and \code{repeat} with braces, as in
+C. Functions are created with \code{function} and assigned to a name; the value of the last
+expression is returned automatically.
+\begin{lstlisting}[language=R]
+reynolds <- function(rho, v, D, mu = 1.0e-3) {
+  rho * v * D / mu
+}
+regime <- function(Re) {
+  if (Re < 2300) "laminar" else if (Re < 4000) "transitional" else "turbulent"
+}
+Re <- reynolds(998, c(0.01, 0.05, 1.0), 0.05)   # vectorised: three Reynolds numbers
+sapply(Re, regime)                              # apply a function to each element
+# [1] "laminar"      "transitional" "turbulent"
+\end{lstlisting}
+Explicit \code{for} loops are fine in R, but idiomatic R code prefers vectorised
+operations and the \code{apply} family (\code{sapply}, \code{lapply}, \code{vapply},
+\code{mapply}), which apply a function to every element of a vector or list.
+
+\section{Case study: the falling skydiver}
+
+\codefile{R}{r/drag.R}{Euler solution of the drag equation}
+\outfile{r/drag.out}
+\code{sprintf} is vectorised: given vectors of values it produces a vector of formatted
+lines, which \code{cat} prints. \code{seq\_len(n)} produces $1, \ldots, n$ and is safer than
+\code{1:n}, which gives the unexpected sequence \code{1 0} when $n = 0$.
+
+\section{Data frames and statistics}
+
+R's real power appears when you work with tables of data and statistical models. The
+following script reads the tensile test results, summarises them by material, tests
+whether the two materials differ, fits a linear model and saves a box plot.
+\codefile{R}{r/tensile.R}{data frames, a t-test and a linear model}
+\outfile{r/tensile.out}
+A few lines of R gave a statistical answer to a typical engineering question (here for
+our invented data set). The Welch
+t-test shows that the mean yield strengths of the two materials differ significantly
+($p < 0.001$). The linear model shows that, within the tested range, the small variations
+in specimen diameter explain none of the scatter in the aluminium results ($R^2 \approx 0$):
+the scatter is material variability, not a measurement artefact. Notice the
+\term{formula} notation \code{yield\_MPa \textasciitilde\ material}: ``yield strength
+explained by material''. The same notation is used for t-tests, analysis of variance
+(\code{aov}), linear and nonlinear regression (\code{lm}, \code{nls}), generalised linear
+models (\code{glm}) and plotting.
+
+\section{The tidyverse and ggplot2}
+
+Many R users work with the \textbf{tidyverse}, a coherent set of packages for data
+handling designed by Hadley Wickham and colleagues. Operations are chained with the
+\term{pipe} operator \code{|>} (built in since R 4.1; the tidyverse also uses
+\code{\%>\%}), which passes the result of one step into the next, so code reads from top to
+bottom like a recipe:
+\begin{lstlisting}[language=R]
+library(tidyverse)
+read_csv("tensile.csv") |>
+  mutate(area_mm2 = pi * diameter_mm^2 / 4,
+         load_kN  = yield_MPa * area_mm2 / 1000) |>
+  group_by(material) |>
+  summarise(n = n(), mean_load = mean(load_kN), sd_load = sd(load_kN))
+\end{lstlisting}
+\textbf{ggplot2} implements the ``grammar of graphics'': a plot is built from data, a
+mapping of variables to visual properties (\emph{aesthetics}), and layers of geometric
+objects. It produces publication-quality figures with very little code:
+\begin{lstlisting}[language=R]
+ggplot(df, aes(x = material, y = yield_MPa, colour = material)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1) +
+  labs(y = "Yield strength (MPa)", x = NULL) +
+  theme_bw()
+ggsave("yield.pdf", width = 4, height = 3)
+\end{lstlisting}
+The \py library \textbf{plotnine} copies the ggplot2 syntax, and \textbf{seaborn} offers a
+similar statistical-graphics style.
+
+\section{R for engineers}
+
+Some areas where R is particularly strong for engineering work:
+\begin{itemize}
+\item \textbf{Design of experiments} (packages \code{DoE.base}, \code{FrF2}, \code{rsm}):
+  factorial and fractional factorial designs, response surfaces;
+\item \textbf{Quality control} (\code{qcc}, \code{SixSigma}): control charts, process
+  capability indices;
+\item \textbf{Reliability and survival analysis} (\code{survival}, \code{WeibullR}): Weibull
+  fits of failure times, life data analysis;
+\item \textbf{Time series} (\code{forecast}, \code{fable}): forecasting loads, demand and
+  sensor signals;
+\item \textbf{Spatial and environmental data} (\code{sf}, \code{terra}): maps, hydrology,
+  geostatistics (kriging);
+\item \textbf{Reproducible reports}: R Markdown and Quarto documents mix text, code and
+  results and render to PDF, Word or HTML --- a test report that regenerates itself when
+  new data arrive. (Quarto also works with \py and Julia.)
+\item \textbf{Interactive web apps}: \textbf{Shiny} turns an R analysis into a web
+  application with sliders and plots, without writing JavaScript.
+\end{itemize}
+
+\section{R and Python}
+
+R and \py are often presented as rivals, but many data scientists use both. The
+\code{reticulate} package calls \py from R, and \code{rpy2} calls R from \py; Jupyter and
+Quarto support both; and data are easily exchanged through CSV, Parquet or Arrow files.
+As a rule of thumb: for statistics, designed experiments and statistical graphics, R is
+often more convenient; for general programming, machine learning and integration with
+other software, \py is usually the better choice.
+
+\section{Strengths and weaknesses}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Strengths} & \textbf{Weaknesses}\\
+\midrule
+Unmatched range of statistical methods & Unusual syntax and many inconsistencies\\
+Excellent graphics (ggplot2) & Slow loops; large data must fit in memory\\
+Data frames, factors and \code{NA} built in & Less suited to general-purpose programming\\
+Reproducible reports (R Markdown, Quarto) and Shiny apps & Several competing styles (base R, tidyverse, data.table)\\
+Free; strong academic community & Fewer engineering-specific (non-statistical) packages\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Further reading}
+\begin{itemize}
+\item H.~Wickham, M.~\c{C}etinkaya-Rundel and G.~Grolemund, \emph{R for Data Science},
+  2nd ed., O'Reilly, 2023 (free online at \url{https://r4ds.hadley.nz}).
+\item N.~Matloff, \emph{The Art of R Programming}, No Starch Press, 2011.
+\item D.~C.~Montgomery, \emph{Design and Analysis of Experiments}, Wiley --- the classic
+  engineering statistics text, with many R-based supplements.
+\end{itemize}
+
+\begin{exercises}
+\item In R, compute the mean, median, standard deviation and coefficient of variation of
+  the values in \file{yield.txt} (\code{x <- scan("../data/yield.txt")}).
+\item Create a vector of 1000 normally distributed random numbers with mean 275 and
+  standard deviation 5 (\code{rnorm}). Plot a histogram and add the theoretical density
+  curve.
+\item What do \code{c(1, 2, 3) + c(10, 20, 30, 40, 50, 60)} and
+  \code{c(1, 2) + c(10, 20, 30)} return? Explain R's recycling rule. Why is the second
+  case accompanied by a warning?
+\item Use \code{lm} to fit a straight line to the data $x = (0, 1, 2, 3, 4)$,
+  $y = (0.1, 1.9, 4.2, 5.8, 8.1)$. Report the slope, intercept and $R^2$, and plot the data
+  with the fitted line.
+\item Rewrite the tensile analysis with the tidyverse and ggplot2.
+\end{exercises}

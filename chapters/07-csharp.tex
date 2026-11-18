@@ -1,0 +1,227 @@
+% =====================================================================
+\BookChapter[C\#]{C\#: Applications on the .NET Platform}
+\label{ch:csharp}
+
+\begin{researchquestion}
+Which language is behind the Windows programs on laboratory and office computers?
+\end{researchquestion}
+\OrientationNote
+% =====================================================================
+
+\begin{factsheet}{C\#}
+First appeared & 2000 (C\# 1.0 in 2002); a new version every November (C\# 14 with .NET 10 in 2025)\\
+Designed by & Anders Hejlsberg and team, Microsoft\\
+Paradigms & object-oriented, generic, functional elements (LINQ, lambdas)\\
+Typing & static, strong; type inference with \code{var}\\
+Execution & compiled to bytecode (CIL), JIT-compiled by the .NET runtime; ahead-of-time option\\
+File extension & \file{.cs}; projects \file{.csproj}\\
+Platform & .NET (free, open source, Windows, Linux, macOS)\\
+Used for & Windows desktop applications, laboratory and test software, industrial automation
+  front ends (HMI/SCADA), games (Unity), web services, plug-ins for engineering software\\
+Famous software & Unity game engine, many test-and-measurement applications, plug-ins and
+  scripting for Revit, Rhino/Grasshopper, AutoCAD, Tekla and SolidWorks\\
+\end{factsheet}
+
+C\# (pronounced ``C sharp'', like the musical note one semitone above C) is Microsoft's
+main application language. To an engineer it matters for two reasons. First, a great deal
+of software that runs on Windows PCs in laboratories, factories and design offices is
+written in C\#: instrument control panels, test benches, operator screens. Second, many
+CAD and BIM programs used in civil, structural and mechanical engineering offer their
+programming interface in C\# (or another .NET language).
+
+\LearningOutcomes{Create and run a C\# console program; read C\# classes, properties and records; follow a data query written with LINQ; and identify where C\# appears in engineering practice, from instrument software to CAD and BIM plug-ins.}
+
+\section{History and philosophy}
+
+\begin{history}
+In the late 1990s Microsoft wanted a modern language for its new .NET platform. The
+design was led by Anders Hejlsberg, who had earlier created Turbo Pascal and Delphi. The
+result, C\#, resembled Java closely enough that the two were often compared, but it
+quickly developed its own features: properties, events, LINQ queries, \code{async}/\code{await}
+for asynchronous code (later copied by JavaScript, \py and Rust), and pattern matching. In
+2014--2016 Microsoft made .NET open source and cross-platform, so C\# now runs on Linux and
+macOS as well as Windows.
+\end{history}
+
+C\# aims to be a productive, safe, general-purpose language. It is statically typed and
+memory safe: the runtime checks array bounds and frees memory with a garbage collector, so
+the memory errors of C and C++ cannot happen in normal C\# code.
+
+\section{Getting started}
+
+Install the free .NET SDK from \url{https://dotnet.microsoft.com}. Visual Studio (Windows)
+and VS Code with the C\# extension (all platforms) are the usual editors. Create and run a
+project from the command line:
+\begin{lstlisting}[style=shell]
+$ dotnet new console -o Hello
+$ cd Hello
+$ dotnet run
+\end{lstlisting}
+With recent versions of .NET, the generated \file{Program.cs} contains a single line,
+\begin{lstlisting}[language={[Sharp]C}]
+Console.WriteLine("Hello, World!");
+\end{lstlisting}
+This uses \term{top-level statements}: the compiler wraps the code in a hidden \code{Main}
+method. Since .NET 10 you can even run a single file directly with \code{dotnet run
+hello.cs}. The traditional, explicit form, which you will see in most existing code, is:
+\codefile{[Sharp]C}{csharp/Hello.cs}{hello world, traditional form}
+\outfile{csharp/Hello.out}
+Everything in C\# lives inside a class. The \code{using System;} directive lets you write
+\code{Console} instead of \code{System.Console}. The \code{\$} before a string makes it an
+\term{interpolated string}, the C\# equivalent of a \py f-string.
+
+\section{The language in brief}
+
+If you have read the C chapter, most of C\# will look familiar: braces, semicolons,
+\code{if}/\code{else}, \code{for}, \code{while}, \code{switch}, and \code{//} comments.
+\begin{lstlisting}[language={[Sharp]C}]
+int    n = 40;
+double g = 9.81;
+var    rho = 998.0;                   // 'var': the compiler infers double
+string material = "S275";
+bool   ok = true;
+const double Pi = Math.PI;
+
+double[] T = { 293.1, 305.6, 299.4 }; // array (fixed size, bounds checked)
+var loads = new List<double> { 12.6, 14.0 };   // growing list (like Python's list)
+loads.Add(13.2);
+var density = new Dictionary<string, double> { ["steel"] = 7850, ["water"] = 998 };
+
+foreach (double x in T)               // like Python's for ... in
+    Console.WriteLine($"{x - 273.15:F1} C");
+
+double Area(double d) => Math.PI * d * d / 4;   // expression-bodied method
+\end{lstlisting}
+Integer division truncates as in C (\code{7/2 == 3}). Mathematical functions are static
+methods of the \code{Math} class: \code{Math.Sqrt}, \code{Math.Pow}, \code{Math.Exp},
+\code{Math.Sin}, \code{Math.Tanh} and so on. Exceptions are handled with
+\code{try}/\code{catch}/\code{finally}, very much like \py's \code{try}/\code{except}.
+
+\subsection*{Properties and records remove routine code}
+
+C\# classes look like C++ or Java classes, with one convenient addition:
+\term{properties}, which look like fields to the user of a class but can run code when
+read or written:
+\begin{lstlisting}[language={[Sharp]C}]
+public class Pipe
+{
+    public double Length { get; }            // read-only property, m
+    public double Diameter { get; }          // m
+    public double Area => Math.PI * Diameter * Diameter / 4;   // computed property
+
+    public Pipe(double length, double diameter)
+    {
+        if (diameter <= 0)
+            throw new ArgumentException("Diameter must be positive");
+        Length = length;
+        Diameter = diameter;
+    }
+}
+
+var p = new Pipe(12.0, 0.05);
+Console.WriteLine(p.Area);                   // 0.0019634954084936207
+\end{lstlisting}
+For classes that mainly hold data, \code{record} types generate the constructor, equality
+and printing automatically --- the counterpart of \py's data classes:
+\begin{lstlisting}[language={[Sharp]C}]
+public record Material(string Name, double Density, double YoungsModulus);
+var steel = new Material("S275", 7850, 210e9);
+Console.WriteLine(steel);   // Material { Name = S275, Density = 7850, YoungsModulus = 210000000000 }
+\end{lstlisting}
+
+\section{Case study: the falling skydiver}
+
+\codefile{[Sharp]C}{csharp/Drag.cs}{Euler solution of the drag equation}
+\outfile{csharp/Drag.out}
+In an interpolated string, \code{\{v[n],10:F4\}} means ``width 10, fixed point with 4
+decimals'', which corresponds to \code{\{v[n]:10.4f\}} in \py. The methods are
+\code{static}: they belong to the class itself rather than to an object, which is
+appropriate for plain mathematical functions.
+
+\section{LINQ: queries on data}
+
+\term{LINQ} (Language-Integrated Query) lets you filter, transform, group and summarise
+collections with a chain of small functions, in a style inspired by SQL and functional
+programming. The following program reads the tensile-test CSV file used in
+Chapter~\ref{ch:python}, groups the specimens by material and finds the one with the
+largest yield load.
+\codefile{[Sharp]C}{csharp/Tensile.cs}{a CSV file queried with LINQ}
+\outfile{csharp/Tensile.out}
+Each step --- \code{Skip}, \code{Select}, \code{GroupBy}, \code{Average},
+\code{OrderByDescending} --- takes a lambda (\code{s => s.Yield} means ``given \code{s},
+return \code{s.Yield}''). Compare this with the pandas version in
+Chapter~\ref{ch:python}: the ideas are the same, only the notation differs.
+
+\section{C\# in engineering practice}
+
+\paragraph{Desktop and laboratory applications.}
+Windows Forms, WPF and the cross-platform .NET MAUI and Avalonia frameworks are used to
+build graphical applications: a window with buttons, live plots and a ``Start test''
+button that talks to instruments over USB, serial ports or Ethernet. Many instrument
+vendors supply .NET libraries for exactly this purpose.
+
+\paragraph{Industrial automation.}
+Operator screens (HMI) and supervisory systems in factories are often written in C\#,
+communicating with PLCs (Section~\ref{sec:plc}) through standard protocols such as OPC~UA
+and Modbus.
+
+\paragraph{CAD and BIM.}
+Autodesk Revit, AutoCAD, Rhino (and its visual programming environment Grasshopper), Tekla
+Structures and SolidWorks all expose .NET programming interfaces. A structural engineer
+might write a C\# plug-in that reads beam sizes from a model, runs a design check and
+colours under-designed members red. (Many of these programs also accept \py scripts, for
+example through Dynamo or Rhino's \py editor.)
+
+\paragraph{Games and simulation.}
+The Unity engine uses C\# for all game logic. Unity is also used for engineering
+visualisation, virtual commissioning of production lines, and training simulators.
+
+\paragraph{Numerical computing.}
+C\# is not a typical choice for heavy numerics, but libraries such as Math.NET Numerics
+provide linear algebra, statistics and optimisation, and performance is good thanks to the
+JIT compiler and SIMD support.
+
+\section{Visual Basic and F\#}
+
+Two other languages run on the same .NET platform. \textbf{Visual Basic .NET} is the
+descendant of the BASIC language; its older cousin \textbf{VBA} (Visual Basic for
+Applications) is still the macro language of Microsoft Excel (Section~\ref{sec:vba}).
+\textbf{F\#} is a functional-first .NET language with a feature engineers appreciate:
+\emph{units of measure} checked by the compiler, so that adding metres to seconds is a
+compile-time error.
+
+\section{Strengths and weaknesses}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Strengths} & \textbf{Weaknesses}\\
+\midrule
+Productive, modern, memory-safe language & Smaller scientific-computing ecosystem than \py\\
+Excellent tools (Visual Studio, debugger) & Historically tied to Windows; some GUI frameworks still are\\
+Fast (JIT, SIMD) & Requires the .NET runtime (or ahead-of-time compilation)\\
+Standard language for Windows apps and many CAD/BIM plug-ins & More ceremony than \py for small scripts\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Further reading}
+\begin{itemize}
+\item Microsoft's C\# documentation and tutorials, \url{https://learn.microsoft.com/dotnet/csharp/}.
+\item J.~Albahari, \emph{C\# 12 in a Nutshell}, O'Reilly, 2023.
+\item M.~J.~Price, \emph{C\# 14 and .NET 10 -- Modern Cross-Platform Development
+  Fundamentals}, 10th ed., Packt.
+\end{itemize}
+
+\begin{exercises}
+\item Install the .NET SDK, create a console project and run \file{Drag.cs}. Then change
+  the program to read $m$ and $c$ from the command line (\code{args[0]}, \code{args[1]})
+  using \code{double.Parse}.
+\item Write a C\# \code{record Resistor(string Name, double Ohms)} and use LINQ to compute
+  the series and parallel resistance of a list of resistors.
+\item Rewrite the \code{Pipe} class of Chapter~\ref{ch:python} in C\#, including the
+  \code{PressureDrop} method. Use properties for the length, diameter and roughness.
+\item Find out which programming interfaces the CAD or BIM software used in your department
+  offers. Is C\# among them? Is \py?
+\end{exercises}

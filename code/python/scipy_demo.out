@@ -1,0 +1,4 @@
+brentq root         : 2.094551481542327
+quad integral       : 2.000000000000000 (error estimate 2.2e-14)
+solve_ivp v(10.0)  : 52.749607  exact 52.749607
+solve_ivp v(20.0)  : 55.926838  exact 55.926838

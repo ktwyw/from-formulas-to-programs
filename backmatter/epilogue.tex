@@ -1,0 +1,303 @@
+\ProjectChapter{Epilogue: The Past and Future of the Languages of Engineering}{epilogue}
+\index{history of programming languages}\index{future of programming}
+
+\begin{researchquestion}
+Where did the languages of engineering come from, how do they change, and what will an
+engineer's programming look like when you graduate?
+\end{researchquestion}
+
+In 1957 an engineer who wanted a computer to evaluate a formula had to translate it by
+hand into hundreds of machine instructions. The first Fortran compiler did that
+translation automatically, and its name said so: \emph{formula translation}. Today you can
+type a differential equation into a notebook and receive its exact solution, or describe a
+calculation in plain English and receive a draft program in any language of these notes.
+The title of these notes, \emph{From Formulas to Programs}, describes a road that
+engineers have been shortening for seventy years. This epilogue looks back along that
+road, draws out the patterns, and then looks ahead. The look ahead is opinion, not fact;
+read it as one engineer's informed guess.
+
+\section*{Every language began as somebody's problem}
+
+None of the languages in these notes was designed to be a ``language of engineering''.
+Each was built by people who were stuck. John Backus was tired of hand-writing machine
+code for formulas. Dennis Ritchie needed an operating system that could move from one
+computer to another. Cleve Moler wanted his students to use good matrix software without
+first learning Fortran. Guido van Rossum wanted a language that was pleasant to read. The
+creators of Julia were tired of writing every program twice, once to try the idea and
+once to make it fast. The table below lists these turning points.
+
+\begin{table}[H]
+\centering\small
+\caption*{\textbf{\sffamily Six turning points.} Each new language answered a problem
+that the languages of its time handled badly, and each answer is still in use.}
+\begin{tabularx}{\textwidth}{@{}>{\RaggedRight\arraybackslash}p{0.11\textwidth}>{\RaggedRight\arraybackslash}p{0.38\textwidth}X@{}}
+\toprule
+\textbf{Years} & \textbf{The problem} & \textbf{The answer}\\
+\midrule
+1950s & Writing machine code for formulas is slow and full of errors. & Fortran: the computer translates the formula.\\\addlinespace
+1970s & Software is tied to one model of computer. & C: one source code, compiled for any machine.\\\addlinespace
+1980s & Engineers want matrices and plots without writing a compiled program. & MATLAB, and later the Wolfram Language: interactive computing in the notation of mathematics.\\\addlinespace
+1980s--1990s & Programs grow to millions of lines and become impossible to organise. & C++, Java and C\#: objects, libraries and safer memory.\\\addlinespace
+1990s--2000s & Scientists spend more time writing code than thinking about the problem. & \py and R: readable, free, and with a library for almost everything.\\\addlinespace
+2010s & Fast code and convenient code are written in different languages; memory errors cause most security failures. & Julia: speed without a second language. Rust: safety without loss of speed.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The lesson for you is practical. A language is a tool that carries the experience of the
+people who built it. When a language seems strange, ask what problem its designers had.
+Fortran's arrays, C's pointers, MATLAB's matrices and \py's indentation all stop looking
+arbitrary once you know the answer.
+
+\section*{Four patterns in how languages change}
+
+\subsection*{Languages rarely die; they settle into the foundations}
+
+Fortran is almost seventy years old and still runs weather forecasts. C is over fifty and
+still runs inside nearly every device you own. New languages do not replace old ones. They
+are built on top of them. When you call NumPy to solve a linear system, \py hands the work
+to C, which hands it to routines first written in Fortran. The old languages have moved
+down into the foundations, where few people see them and everybody depends on them. This
+is why an engineer who can \emph{read} an old language is valuable: the foundations
+still need inspection and repair.
+
+\subsection*{Each generation moves the programmer closer to the problem}
+
+Machine code describes what the processor does. Fortran and C describe a calculation.
+MATLAB and NumPy describe operations on whole matrices. The Wolfram Language and SymPy
+work with the formula itself. Modelica lets you write the physical equations and leaves
+the solution method to the tool. At every step the programmer writes less about the
+\emph{machine} and more about the \emph{problem}, and a translator of some kind fills in
+the rest. The history of programming languages is largely the history of better
+translators.
+
+\subsection*{Good ideas travel from one language to the next}
+
+Array operations started in APL in the 1960s, became popular through MATLAB, and are now
+in Fortran, \py, R and Julia. Objects started in Simula as a way to simulate queues and
+traffic, and are now almost everywhere. Garbage collection came from Lisp, notebooks from
+Mathematica, the data frame from S and R, and \code{async}/\code{await} became widespread through C\#.
+Languages borrow freely, so the major languages grow more alike with time. This is good
+news for a learner: an idea you understand in \py will meet you again, with different
+spelling, in the next language you learn.
+
+\subsection*{The community decides more than the syntax does}
+
+\py is not the fastest language in these notes, nor the most elegant. It leads because of
+what surrounds it: free libraries for nearly every task, teaching material at every
+level, and millions of people who can answer a question. MATLAB holds its place through
+its toolboxes and Simulink, R through its statistical packages, C through fifty years of
+compilers for every chip. When you choose a language, you choose its libraries, its
+tools and its people. That part of a language changes slowly, which is why the popularity
+tables of Chapter~\ref{ch:intro} change slowly too.
+
+\section*{The machine keeps changing under the languages}
+
+For about forty years, programs became faster every year without anyone changing them,
+because each new processor was faster than the last. Around 2005 that stopped. Since then
+computers have gained more cores, not faster ones, and much of the fastest computing has
+moved to graphics processors (GPUs) that perform thousands of simple operations at once.
+
+This shift is reshaping the languages. A loop written the 1990s way uses one core of a
+machine that has dozens. Languages and libraries that can spread work over many cores and
+onto GPUs have gained ground: array libraries, Julia, the machine-learning frameworks
+driven from \py, and newer additions to Fortran and C++. Even \py itself is changing: its
+recent versions can be built without the internal lock that for thirty years prevented
+two threads from running \py code at the same time. Expect this trend to continue. The
+engineer of the next decade will more often describe \emph{what} should be computed for
+a whole array or a whole grid, and leave it to the tools to decide \emph{where} it runs.
+
+A second pressure is safety. A large share of serious security failures in software come
+from memory errors that C and C++ allow (Chapter~\ref{ch:c}). As software takes control of
+cars, medical devices and power grids, such errors become engineering hazards. Languages
+that prevent them, with Rust as the leading example for low-level work, are being
+adopted for new systems, and safety standards are likely to ask for them more often. The
+existing C and C++ code will not disappear, but less new code of that kind will be
+written by hand.
+
+\section*{An old argument, open again}
+
+The largest change of your student years is the AI assistant that writes code from a
+description in ordinary words (Chapter~\ref{ch:choosing}). It has reopened an argument
+that is almost fifty years old, and you should know both sides of it.
+
+\subsection*{One view: the next programming language is the one you already speak}
+
+Andrej Karpathy, a well-known AI researcher, summed up the new situation in one line:
+``The hottest new programming language is English.'' In his account, software has passed
+through three stages: programs written by hand, neural networks trained on data, and now
+language models steered by instructions in everyday language. Jensen Huang, the head of
+the chip maker Nvidia, drew a bolder conclusion at a summit in Dubai in 2024. For years,
+he said, everyone had been told that children must learn to program; in his view the goal
+of computing is the opposite, to make programming unnecessary, so that ``everybody in the
+world is now a programmer.'' He advised young people to put their effort into knowing a
+field well: biology, manufacturing, farming, education.
+
+There is truth in this. People who have never written a loop can now produce a working
+program by describing what they want. The barrier of syntax, which stopped many
+beginners, is much lower than it was.
+
+\subsection*{The other view: precise notation is a privilege, not a burden}
+
+In the late 1970s the Dutch computer scientist Edsger Dijkstra wrote a short note with
+the title \emph{On the foolishness of ``natural language programming''}. People were
+already wishing that computers could be instructed in plain English. Dijkstra argued that
+the wish was mistaken. Mathematics, he pointed out, made its great advances only after it
+stopped being written in words and adopted symbols. We should, he wrote, ``regard the
+convenience of using them as a privilege'': with symbols, a school pupil can do
+calculations that once needed a genius. Everyday language feels easy, he added, mostly
+because it lets us say things that are wrong or meaningless without noticing.
+
+This matters to engineers in a direct way. The title of these notes begins with the word
+\emph{formulas}, and a formula is exactly what Dijkstra was defending: a short statement
+that means one thing. ``The drag grows with speed'' is a sentence. $F = c v^2$ is a
+formula; it tells you by how much, and it can be checked. No engineering standard, drawing
+or contract is written in loose prose where a number or a symbol can be used.
+
+\subsection*{Both sides are partly right}
+
+The two views are less opposed than they sound. Plain language is a good way to
+\emph{start}: to say roughly what is wanted and get a first draft. Precise notation is
+the only way to \emph{finish}: to state exactly what the program must do and to confirm
+that it does. Seen against seventy years of history, the AI assistant is the next
+translator in the line, from machine code to formulas, from formulas to matrices, from
+matrices to equations, and now from sentences to programs. Earlier translators did not
+make programmers unnecessary. Fortran did not remove the need to understand the formula;
+it removed the need to count memory addresses.
+
+There is one difference from the earlier translators, and it is important. A compiler is
+built to translate the same input the same way every time, and when it fails it usually
+says so. An AI assistant can produce a different program each time it is asked, and it
+can be wrong while sounding certain. That is why the checking skills of these notes
+matter more now, not less.
+
+\section*{Where the road may lead}
+
+\subsection*{Writing the code was never the hard part}
+
+When Huang's remark spread, many working programmers gave the same reply: typing the
+program was never the difficult part of the job. The difficult part was, and is,
+deciding exactly what the program should do. Which cases must it handle? In which units?
+To what accuracy? What should happen when the input is wrong? An assistant that types
+quickly does not answer these questions. If they are left open, it fills the gaps with
+its own guesses, and it does so quickly and with confidence.
+
+For this reason many software teams now describe their work differently. They treat the
+\emph{specification}, a careful written statement of what must be built, what must not,
+and how to verify the result, as the thing that lasts. The code becomes something that
+can be generated again whenever needed. Some call the human's new role ``architect and
+reviewer'' in place of ``typist''. These are opinions from practitioners, not settled
+findings, but engineers will recognise the idea at once. A bridge is built from drawings,
+standards and test protocols, not from a conversation. The drawing is the lasting
+record; the concrete is poured to match it.
+
+\subsection*{Strict languages and tests become the safety net}
+
+If a machine writes the program, something else must catch its mistakes. Two tools do
+this well. The first is a strict language. A compiler for Fortran, C++ or Rust refuses a
+program in which the types do not match, and so do the type checkers for \py
+(Chapter~\ref{ch:python}). Some observers expect such languages to gain ground for this
+reason: a generated program that must pass a strict checker is easier to trust than one
+that merely runs. The second tool is the test. A set of cases with known answers, written
+by a person who understands the problem, says precisely what ``correct'' means. In the
+future an engineer may write the tests and leave much of the program to the machine. The
+habit you are building in ENG~101, checking a result against an exact solution or a
+limiting case, is exactly the skill this requires.
+
+\subsection*{Engineering has been here before}
+
+Electronics offers an encouraging precedent. Fifty years ago engineers drew every
+transistor of a chip by hand. Today design software places billions of them
+automatically. Electrical engineering did not disappear, and students of the subject
+still learn how a circuit works and how to draw one. They need that knowledge to tell the
+software what to build and to judge what it produces. The work moved to a higher level;
+the understanding underneath stayed necessary. Programming is likely to follow the same
+path.
+
+\subsection*{Programs that can be differentiated, and models that learn}
+
+Engineers have always needed derivatives: for optimisation, for sensitivity analysis, for
+fitting models to data. A growing family of tools can differentiate an entire program
+automatically, however long it is. This \emph{automatic differentiation} is what trains
+neural networks, and it is spreading into simulation codes. It allows a simulation to be
+tuned against measurements, and physical laws to be combined with models learned from
+data. Languages and libraries built with this in mind, such as JAX and PyTorch in \py and
+much of the Julia ecosystem, are likely to matter more in engineering computation.
+
+\subsection*{Describing the system and letting the tool write the program}
+
+In Simulink, an engineer draws a controller and a code generator writes the C program
+that runs in the car. In Modelica, an engineer writes the equations of a pump and a pipe
+and the tool derives the simulation. This style, in which the engineer works with a model
+of the system and software produces the program, has been growing for thirty years. With
+better tools and with AI assistance it will probably grow faster. More engineers will
+work with models, and fewer will type every line.
+
+\subsection*{What will probably not change}
+
+Predictions about technology are often wrong, so it is worth listing what has stayed the
+same since 1957 and is likely to stay the same.
+
+\begin{itemize}
+\item \textbf{The algorithm comes first.} A clear statement of the steps is still the
+  hard part. No language and no assistant can supply it if you cannot say what you want.
+\item \textbf{Numbers in a computer are approximate.} Rounding, overflow and cancellation
+  (Chapter~\ref{ch:howcoderuns}) follow from how numbers are stored, not from the language.
+\item \textbf{Units and assumptions live outside the code.} The Mars Climate Orbiter was
+  lost through a mismatch of units that no compiler detected. The engineer still has to
+  know what each number means.
+\item \textbf{An unchecked result is a guess.} This holds whether the program was written
+  by you, by a colleague, by a vendor or by a machine.
+\item \textbf{Responsibility stays with a person.} The engineer who signs the design
+  answers for the calculation behind it.
+\end{itemize}
+
+\begin{keyidea}[Key idea: learn the ideas, and the languages will follow]
+Languages come and go on a timescale of decades; the ideas beneath them last much
+longer. Variables, loops, functions, arrays, types, tests and the limits of
+floating-point arithmetic were needed in 1957 and are needed now. If you learn those
+ideas well in \py, each new language costs you a few days of syntax, not a new
+education.
+\end{keyidea}
+
+\section*{What this means for you}
+
+You will graduate into a profession in which programming is as ordinary as drawing or
+report writing, and in which much routine code is drafted by machines. Three habits will
+serve you whatever the languages of that time turn out to be.
+
+Should you still learn to program, if a machine can write the code? Consider reading and
+writing. Few people become novelists, and nobody suggests that the rest should stay
+illiterate. Few people become mathematicians, yet every engineer learns calculus,
+because without it you cannot tell whether a result makes sense. Programming is becoming
+a literacy of the same kind. You learn it in order to think clearly about calculations
+and to judge the ones that are handed to you.
+
+\textbf{Learn one language deeply.} For you that language is \py. Depth in one language
+teaches the ideas that transfer to the rest, and it gives you a place to test your
+understanding.
+
+\textbf{Read widely.} Use these notes to become comfortable opening a Fortran, C or
+MATLAB file and working out what it does. The engineer who can read the old solver, the
+vendor's script and the assistant's draft can judge all three.
+
+\textbf{Check everything that matters.} Keep asking the question that runs through these
+notes: \emph{how do I know this answer is right?} The tools for answering it, an exact
+solution, a limiting case, a conservation law, a second method, do not depend on any
+language.
+
+Backus's team set out to let engineers write formulas and leave the machine instructions
+to the computer. Seventy years later the computer can take on far more of the writing.
+What it cannot take on is knowing which formula describes the problem, and whether the
+result can be trusted. That part of the work was the engineer's in 1957, and it still is.
+
+\section*{Sources for the debate}
+{\small
+A.~Karpathy, ``Software Is Changing (Again)'', talk at the Y~Combinator AI Startup School,
+2025; the remark about English dates from an earlier post of his.
+J.~Huang, remarks at the World Government Summit, Dubai, 2024, as reported in the
+technology press.
+E.~W.~Dijkstra, \emph{On the foolishness of ``natural language programming''}, note
+EWD~667, \url{https://www.cs.utexas.edu/~EWD/transcriptions/EWD06xx/EWD667.html}.
+The views on specifications, reviewing and strict languages are drawn from practitioner
+essays published in 2025 and 2026 and are opinions, not established results.\par}

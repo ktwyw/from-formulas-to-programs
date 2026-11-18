@@ -1,0 +1,142 @@
+% =====================================================================
+\ProjectChapter{Answers to Selected Exercises}{app:answers}
+% =====================================================================
+
+These answers are short on purpose. Try each exercise yourself before you read them. Where
+a numerical answer is given, it was computed with the programs of these notes.
+
+\section*{Chapter 1}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{1.1}] $(252, 105) \to (105, 42) \to (42, 21) \to (21, 0)$. The loop body runs three
+  times and the greatest common divisor is 21.
+\item[\AnswerRef{1.2}] (a) declarative (and functional): the formula states what to compute; (b)
+  imperative; (c) declarative; (d) array programming; (e) object-oriented.
+\item[\AnswerRef{1.4}] Compiled languages need a defined entry point because the operating system starts
+  an executable file at one particular place; interpreters simply start at the top of the
+  script.
+\item[\AnswerRef{1.6}] If a value read from a form or a file is a string, \code{+} concatenates instead
+  of adding, so a load of \code{"3"} kN plus 4 kN becomes \code{"34"}. No error is raised,
+  and the wrong number propagates silently.
+\end{description}
+
+\section*{Chapter 2}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{2.1}] $5 = 101_2$, $12 = 1100_2$, $100 = 1100100_2$.
+\item[\AnswerRef{2.2}] An unsigned 16-bit integer holds $0$ to $2^{16}-1 = 65\,535$. Counting once per
+  second, it overflows after $65\,536\unit{s} \approx 18.2$ hours and starts again at 0.
+\item[\AnswerRef{2.4}] The textbook formula gives $-7.45\times10^{-9}$, which is wrong in the first
+  digit; the rewritten formula gives $-1.0000\times10^{-8}$, which is correct. In the textbook
+  formula $-b + \sqrt{b^2 - 4ac}$ subtracts two numbers that agree in almost all digits.
+\item[\AnswerRef{2.5}] With a single-precision running total, summing from $n=1$ upwards gives
+  $1.6447253$, summing downwards gives $1.644933$, and $\pi^2/6 = 1.6449341$. Summing
+  upwards, the small late terms are added to a large total and are lost below its last
+  significant digit. Summing the small terms first lets them accumulate before they meet the
+  large ones.
+\item[\AnswerRef{2.6}] The result is \code{[[1, 0, 0], [1, 0, 0], [1, 0, 0]]}: the outer list contains
+  three references to the \emph{same} inner list. Create independent rows with
+  \code{a = [[0]*3 for \_ in range(3)]}, or use \code{numpy.zeros((3, 3))}.
+\end{description}
+
+\section*{Chapter 3 (Python)}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{3.2}] $-40$ is the same on both scales.
+\item[\AnswerRef{3.3}] The maximum absolute errors over $0 \le t \le 20\unit{s}$ are:
+\begin{center}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+$\Delta t$ (s) & 0.5 & 0.25 & 0.125 & 0.0625\\
+max.\ error (m/s) & 0.928 & 0.458 & 0.227 & 0.113\\
+\bottomrule
+\end{tabular}
+\end{center}
+  Each halving of $\Delta t$ halves the error: the Euler method is first-order accurate.
+\item[\AnswerRef{3.6}] For fully turbulent flow in a rough pipe the friction factor is nearly constant
+  and $\Delta p \propto v^2 \propto Q^2$, so the log--log plot has a slope close to 2
+  (slightly less at lower Reynolds numbers, where $f_D$ still decreases with $\mathrm{Re}$).
+  If part of the range is laminar, the slope there is 1, because $\Delta p \propto Q$ in
+  Poiseuille flow.
+\item[\AnswerRef{3.8}] With $\Delta t = 0.02$ the total energy is no longer conserved: in
+  our run it drifts from $0.63$ to $0.55$ over 2000 steps. With $\Delta t = 0.05$ two
+  particles come so close in one step that the huge repulsive force throws them apart,
+  the energy grows without limit, and after a few hundred steps the program prints
+  \code{nan}. Nothing in the code reports an error. A time step must be small compared
+  with the fastest motion in the system.
+\end{description}
+
+\section*{Chapter 4 (Fortran)}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{4.1}] The output changes only slightly: for example, the exact speed at $t = 6\unit{s}$
+  becomes $43.8152$ instead of $43.8151$. The constant \code{0.25} is exactly representable
+  in single precision, but \code{9.81} is stored as $9.8100004196\ldots$, an error of about
+  $4\times10^{-8}$ relative. Such small, silent changes are exactly what makes this bug hard
+  to find.
+\item[\AnswerRef{4.5}] Under implicit typing \code{I} and \code{N} are integers; \code{X}, \code{S} and
+  \code{RMS} are reals. Modern version: \code{rms = sqrt(sum(x(1:n)**2) / n)}.
+\item[\AnswerRef{4.6}] The loop with the first index innermost is faster, because Fortran stores
+  arrays by columns and this order reads memory contiguously.
+\end{description}
+
+\section*{Chapter 5 (C)}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{5.1}] The compiler itself succeeds, but the \emph{linker} reports undefined references
+  to \code{sqrt} and \code{tanh}, because the maths library was not linked. (Some compilers
+  replace simple calls by built-in instructions, so the error may not always appear.)
+\item[\AnswerRef{5.2}] \code{7/2} is \code{3}; \code{7.0/2} is \code{3.5}; \code{7/2*2.0} is
+  \code{6.0} (the integer division happens first); \code{(double)7/2} is \code{3.5};
+  \code{-7/2} is \code{-3} (C truncates toward zero, unlike \py's \code{//}, which gives
+  \code{-4}); \code{-7\%2} is \code{-1}.
+\item[\AnswerRef{5.5}] Without \code{free}, the memory is released only when the program ends. In a
+  function called repeatedly, or in a long-running program such as a controller, the leak
+  grows until memory runs out.
+\end{description}
+
+\section*{Chapter 8 (Java)}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{8.2}] A heat loss of 50~W requires $R_\mathrm{total} = 45/50 = 0.9\unit{K/W}$. The
+  other layers contribute $0.0542\unit{K/W}$, so the insulation must provide $0.8458\unit{K/W}$,
+  i.e.\ $L = 0.8458 \times 0.035 \times 10 \approx 0.30\unit{m}$ of insulation.
+\item[\AnswerRef{8.4}] \code{int} is a primitive value; \code{Integer} is an object that wraps one.
+  Java's generic collections can hold only objects, so a list of integers is a
+  \code{List<Integer>}.
+\end{description}
+
+\section*{Chapter 10 (MATLAB)}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{10.2}] \code{x} is $1\times11$. \code{x*x} fails (inner dimensions 11 and 1 do not
+  match); \code{x.*x} is $1\times11$; \code{x*x\sq{}} is $1\times1$ (the sum of squares);
+  \code{x\sq{}*x} is $11\times11$ (an outer product); \code{x\^{}2} fails (only square matrices
+  can be raised to a matrix power); \code{2.\^{}x} is $1\times11$.
+\end{description}
+
+\section*{Chapter 11 (Wolfram Language)}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{11.3}] $w(x) = \dfrac{q x}{24EI}\left(L^3 - 2Lx^2 + x^3\right)$, with maximum
+  $w(L/2) = \dfrac{5qL^4}{384EI}$.
+\item[\AnswerRef{11.4}] $\sqrt{1+x} \approx 1 + \tfrac{x}{2} - \tfrac{x^2}{8}$. Used, for example, in
+  relativistic and small-strain approximations and in linearising geometric nonlinearities.
+\end{description}
+
+\section*{Chapter 12 (R)}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{12.3}] \code{c(1, 2, 3) + c(10, 20, 30, 40, 50, 60)} gives \code{11 22 33 41 52 63}:
+  the shorter vector is recycled. \code{c(1, 2) + c(10, 20, 30)} gives \code{11 22 31} with a
+  warning, because 3 is not a multiple of 2 --- usually a sign of a mistake.
+\item[\AnswerRef{12.4}] Slope $1.99$, intercept $0.04$, $R^2 = 0.997$.
+\end{description}
+
+\section*{Chapter 15 (Rosetta)}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{15.3}] Simpson's rule with $n = 100$ gives an error of $1.08\times10^{-8}$, about
+  15\,000 times smaller than the trapezoidal rule with the same number of function
+  evaluations.
+\end{description}
+
+\section*{Chapter 16}
+\begin{description}[style=nextline,leftmargin=0pt,font=\normalfont]
+\item[\AnswerRef{16.1}] Reasonable choices (others can be defended): (a) \py; (b) a well-structured
+  spreadsheet, or \py if the calculation is complex --- what matters most is that finance can
+  check it; (c) a PLC language such as Structured Text; (d) an existing CFD code (C++ or
+  Fortran, e.g.\ OpenFOAM) driven by Bash/\py scripts; (e) JavaScript in a web page;
+  (f) R (or \py with SciPy/statsmodels).
+\end{description}

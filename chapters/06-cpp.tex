@@ -1,0 +1,296 @@
+% =====================================================================
+\BookChapter[C++]{C++: Abstraction Without Losing Speed}
+\label{ch:cpp}
+
+\begin{researchquestion}
+How can one language be used for both a microcontroller and a million-line simulation package?
+\end{researchquestion}
+\OrientationNote
+% =====================================================================
+
+\begin{factsheet}{C++}
+First appeared & 1985 (``C with Classes'' from 1979); standards C++98, 11, 14, 17, 20, 23\\
+Designed by & Bjarne Stroustrup, Bell Labs\\
+Paradigms & procedural, object-oriented, generic (templates), functional elements\\
+Typing & static, mostly strong\\
+Execution & compiled to native code\\
+File extensions & \file{.cpp}, \file{.cc}, \file{.cxx} (source); \file{.hpp}, \file{.h} (headers)\\
+Compilers & GCC (\code{g++}), Clang (\code{clang++}), Microsoft Visual C++, Intel\\
+Used for & simulation software (FEM, CFD, MD), games and graphics, CAD, robotics,
+  trading systems, browsers, machine-learning frameworks, embedded systems\\
+Famous software & OpenFOAM, LAMMPS, deal.II, Gmsh, ROS, Unreal Engine, Chrome, the cores
+  of PyTorch and TensorFlow, Eigen, Blender, much of Ansys, Abaqus and COMSOL\\
+\end{factsheet}
+
+C++ takes C and adds abstractions: classes, templates, a rich standard library, and
+automatic resource management, while keeping C's speed and its access to the hardware. It
+is the language of large, performance-critical engineering software. When you run a
+finite-element analysis, an open-source CFD case, a robot or a modern video game, there is
+very likely C++ underneath.
+
+\LearningOutcomes{Replace error-prone C constructs with their safer C++ equivalents; pass objects by reference; write a small class hierarchy with virtual functions; explain how resources are released automatically; use standard containers and algorithms; and name the libraries that engineers use for numerical work in C++.}
+
+\section{History and philosophy}
+
+\begin{history}
+Bjarne Stroustrup, a Danish computer scientist, had used the language Simula during his
+PhD at Cambridge to simulate distributed computer systems. Simula's classes made the
+program easy to organise, but it was far too slow. In 1979, at Bell Labs, he began adding
+Simula-style classes to C to get both organisation and speed. ``C with Classes'' was
+renamed C++ in 1983 (\code{++} is C's increment operator: C++ is ``one more than C''). The
+first international standard appeared in 1998. Since C++11 the language has been updated
+every three years, and modern C++ is a much safer and more pleasant language than the C++
+of the 1990s.
+\end{history}
+
+Stroustrup's guiding principle is the \term{zero-overhead principle}: you do not pay
+(in speed or memory) for features you do not use, and what you do use is as efficient as
+if you had written it by hand. This makes C++ suitable both for high-level design and for
+the innermost loops of a solver. The price is complexity: C++ is a very large language, and
+nobody uses all of it. A beginner should learn a modern, safe subset.
+
+\section{Getting started}
+
+Any C compiler distribution also includes a C++ compiler: \code{g++} or \code{clang++} on
+Linux and macOS, Visual Studio on Windows. VS Code, CLion and Qt Creator are popular IDEs.
+\codefile{C++}{cpp/hello.cpp}{hello world}
+\begin{lstlisting}[style=shell]
+$ g++ -std=c++20 -Wall -Wextra -o hello hello.cpp
+$ ./hello
+\end{lstlisting}
+\outfile{cpp/hello.out}
+Instead of \code{printf}, C++ uses \term{streams}: \code{std::cout} (``character
+output'') with the insertion operator \code{<<}. The prefix \code{std::} says that
+\code{cout} belongs to the \term{namespace} of the standard library; namespaces prevent
+name clashes between libraries, much like \py's modules. In \code{main}, the final
+\code{return 0;} may be omitted.
+
+Almost every valid C program is also a valid C++ program, so everything in
+Chapter~\ref{ch:c} still applies. But good C++ code looks quite different from C code.
+
+\section{From C to modern C++}
+
+\subsection*{Use the safer building blocks of the standard library}
+
+Modern C++ replaces the most error-prone C features with safer library types.
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Task} & \textbf{C style (avoid in C++)} & \textbf{Modern C++}\\
+\midrule
+dynamic array & \code{malloc}/\code{free}, raw pointer & \code{std::vector<double>}\\
+fixed array & \code{double a[3]} & \code{std::array<double, 3>}\\
+text & \code{char name[32]} & \code{std::string}\\
+own an object & \code{new}/\code{delete} & \code{std::unique\_ptr}, \code{std::make\_unique}\\
+constants & \code{\#define N 40} & \code{constexpr int N = 40;}\\
+type conversion & \code{(int) x} & \code{static\_cast<int>(x)}\\
+output & \code{printf} & \code{std::cout}, or \code{std::print} (C++23)\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\code{std::vector} is the workhorse. It knows its own size, grows when needed, and releases
+its memory automatically when it goes out of scope:
+\begin{lstlisting}[language=C++]
+#include <vector>
+std::vector<double> T = {293.1, 305.6, 299.4};
+T.push_back(301.2);             // like Python's append
+T.size();                       // 4
+T[0];                           // no bounds check (fast)
+T.at(10);                       // bounds check: throws std::out_of_range
+for (double x : T) { /* ... */ } // range-based for loop, like Python's for
+\end{lstlisting}
+
+\subsection*{Pass large objects by reference, not by copy}
+
+C++ adds \term{references}, a safer alternative to pointers for passing arguments. A
+parameter declared as \code{double\&} is another name for the caller's variable; a
+parameter declared as \code{const std::vector<double>\&} gives the function read-only access
+to the caller's vector without copying it:
+\begin{lstlisting}[language=C++]
+void scale(std::vector<double>& x, double factor)   // modifies the caller's vector
+{
+    for (double& xi : x) xi *= factor;
+}
+
+double norm(const std::vector<double>& x)           // reads it without copying
+{
+    double s = 0.0;
+    for (double xi : x) s += xi * xi;
+    return std::sqrt(s);
+}
+\end{lstlisting}
+Passing large objects by \code{const} reference is one of the first habits of a C++
+programmer.
+
+\subsection*{Let the compiler deduce types, and write small functions in place}
+
+\code{auto} lets the compiler work out the type of a variable from its initial value.
+\term[lambda expressions]{Lambda expressions} define small unnamed functions inline, like \py's \code{lambda}
+but with any number of statements. The brackets \code{[\,]} say which surrounding variables
+the lambda may use (\emph{capture}): \code{[=]} copies them, \code{[\&]} refers to them.
+\begin{lstlisting}[language=C++]
+auto k = 0.15;                                    // double
+auto decay = [k](double t) { return std::exp(-k * t); };
+std::cout << decay(2.0) << '\n';                  // 0.740818
+\end{lstlisting}
+
+\section{Case study: the falling skydiver}
+
+\codefile{C++}{cpp/drag.cpp}{Euler solution of the drag equation}
+\outfile{cpp/drag.out}
+Compared with the C version, there are no global variables and no fixed-size arrays: the
+parameters are \code{const} local variables, the right-hand side is a lambda that captures
+them, and the results go into \code{std::vector}s whose size is computed at run time.
+We kept \code{std::printf} because its format strings are compact; C++23's \code{std::print}
+offers the same convenience with \py-like format strings, \code{std::print("\{:6.1f\}",
+t)}.
+
+\section{Classes and object-oriented programming}
+
+A \code{class} in C++ bundles data members and member functions. Members are
+\code{private} (accessible only inside the class) or \code{public}. A \term{constructor}
+initialises a new object. Inheritance lets a class extend another one, and \code{virtual}
+functions let the program choose the right version of a function at run time
+(\term{polymorphism}).
+
+The following example models beam cross-sections. The bending stiffness of a beam is $EI$,
+where $I$ is the second moment of area of its cross-section. A base class \code{Section}
+declares what every section must provide; three derived classes implement it.
+\codefile{C++}{cpp/sections.cpp}{classes, inheritance and polymorphism}
+\outfile{cpp/sections.out}
+Points to notice:
+\begin{itemize}
+\item \code{Section} is an \term{abstract class}: its functions are declared \code{= 0}, so
+  it cannot be instantiated. It defines an \emph{interface}.
+\item \code{override} asks the compiler to check that a function really overrides a
+  virtual function of the base class --- it catches spelling mistakes.
+\item \code{const} after a member function promises that it does not modify the object.
+\item The loop in \code{main} calls \code{s->area()} without knowing what kind of section
+  \code{s} is. The tube, which has a much smaller area than the solid circle but a similar
+  second moment, has the largest $I/A$ ratio: this is why hollow sections are efficient for
+  bending and torsion.
+\item \code{std::unique\_ptr} owns each object and deletes it automatically. There is no
+  \code{delete} anywhere in the program.
+\end{itemize}
+
+\begin{keyidea}[Key idea: RAII]
+The most important idea in C++ has an awkward name: \term{RAII}, ``resource acquisition
+is initialisation''. A resource (memory, an open file, a lock, a network connection) is
+acquired in an object's constructor and released in its \term{destructor}, which C++ calls
+automatically when the object goes out of scope --- even if an exception is thrown.
+\code{std::vector}, \code{std::string}, \code{std::unique\_ptr} and \code{std::ifstream}
+all work like this. It gives C++ automatic, predictable cleanup without a garbage
+collector.
+\end{keyidea}
+
+\section{Templates and the Standard Library}
+
+\term[templates]{Templates} let you write code once for many types. The compiler generates a separate,
+fully optimised version for each type you use. This is called \term{generic programming},
+and it is how the C++ \term{Standard Template Library} (STL) provides containers and
+algorithms that work for any element type:
+\codefile{C++}{cpp/stl.cpp}{containers, algorithms and a function template}
+\outfile{cpp/stl.out}
+The STL contains containers (\code{vector}, \code{array}, \code{map},
+\code{unordered\_map}, \code{set}, \code{deque}, \code{list}), more than 100 algorithms
+(\code{sort}, \code{find}, \code{accumulate}, \code{transform}, \code{count\_if},
+\code{minmax\_element}, \ldots), random-number generators (\code{<random>}), time
+measurement (\code{<chrono>}), threads (\code{<thread>}), file systems
+(\code{<filesystem>}) and complex numbers (\code{<complex>}). Since C++17 many algorithms
+can run in parallel by adding one argument, \code{std::execution::par}.
+
+\section{Numerical C++ libraries}
+
+The standard library has no matrices. Engineers use libraries such as:
+\begin{itemize}
+\item \textbf{Eigen}: a header-only library for vectors, matrices, linear solvers and
+  geometry. With \term{operator overloading}, C++ lets the library define what \code{+}
+  and \code{*} mean for matrices, so code reads like mathematics:
+\begin{lstlisting}[language=C++]
+#include <Eigen/Dense>
+Eigen::Matrix3d A;
+A << 4, -2, 1,
+    -2, 4, -2,
+     1, -2, 4;
+Eigen::Vector3d b(11, -16, 17);
+Eigen::Vector3d x = A.ldlt().solve(b);    // x = (1, -2, 3)
+\end{lstlisting}
+\item \textbf{Armadillo} (MATLAB-like syntax), \textbf{Blaze}, \textbf{xtensor} (NumPy-like);
+\item \textbf{PETSc} and \textbf{Trilinos} for large parallel sparse problems;
+\item \textbf{Boost}, a large collection of general-purpose libraries, many of which later
+  entered the standard;
+\item \textbf{OpenMP}, \textbf{MPI}, \textbf{CUDA}, \textbf{SYCL} and \textbf{Kokkos} for
+  parallel and GPU computing.
+\end{itemize}
+
+\section{Building larger projects}
+
+Real C++ projects consist of many source and header files and depend on external
+libraries. Compiling them by hand is impractical. \textbf{CMake} is the de facto standard
+build system generator; a minimal \file{CMakeLists.txt} looks like this:
+\begin{lstlisting}[language=bash]
+cmake_minimum_required(VERSION 3.20)
+project(beam LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+add_executable(beam main.cpp sections.cpp)
+\end{lstlisting}
+\begin{lstlisting}[style=shell]
+$ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+$ cmake --build build
+\end{lstlisting}
+Package managers such as \textbf{vcpkg} and \textbf{Conan} download and build libraries.
+
+\section{C++ and Python together}
+
+Many \py libraries are C++ underneath, and you can do the same: \textbf{pybind11} and
+\textbf{nanobind} make C++ functions and classes importable from \py with a few lines of
+glue code. PyTorch, for example, is a C++ library (\emph{LibTorch}) with a \py front end.
+This ``\py outside, C++ inside'' pattern is one of the most common architectures in
+scientific software.
+
+\section{Strengths and weaknesses}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Strengths} & \textbf{Weaknesses}\\
+\midrule
+Speed of C with high-level abstractions & Very large and complex language\\
+Huge ecosystem of engineering and scientific libraries & Long compile times; cryptic template error messages\\
+Deterministic resource management (RAII), no garbage-collection pauses & Still possible to make C-style memory errors\\
+Runs from microcontrollers to supercomputers and GPUs & No standard package manager or build system\\
+Mature tools (debuggers, profilers, IDEs) & Steep learning curve; many outdated tutorials\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Further reading}
+\begin{itemize}
+\item B.~Stroustrup, \emph{A Tour of C++}, 3rd ed., Addison-Wesley, 2022 --- a short
+  overview of modern C++ by its creator.
+\item B.~Stroustrup, \emph{Programming: Principles and Practice Using C++}, 3rd ed.,
+  Addison-Wesley, 2024 --- a first-year university textbook.
+\item \url{https://en.cppreference.com} --- the standard reference.
+\item The C++ Core Guidelines, \url{https://isocpp.github.io/CppCoreGuidelines/}.
+\end{itemize}
+
+\begin{exercises}
+\item Rewrite \file{readstats.c} from Chapter~\ref{ch:c} in modern C++. Read the file with
+  \code{std::ifstream}, store the values in a \code{std::vector} and add them up with
+  \code{std::accumulate}. How much shorter is the program? Is there any \code{free} or \code{delete}?
+\item Add an \code{IBeam} class (flange width $b$, total height $h$, flange thickness
+  $t_f$, web thickness $t_w$) to \file{sections.cpp}. Compute its second moment of area by
+  subtracting two rectangles from the bounding rectangle.
+\item Write a function template \code{T clamp\_value(T x, T lo, T hi)} and test it with
+  \code{int} and \code{double} arguments. (Then find out that \code{std::clamp} already
+  exists.)
+\item A list of materials is stored as a \code{std::vector} whose elements are pairs of
+  type \code{std::pair<std::string, double>} (material name, density). Use
+  \code{std::sort} with a lambda to sort it by density in
+  descending order.
+\item Use \code{<chrono>} to time a loop that sums $10^8$ numbers. Compare the time with
+  and without the \code{-O2} compiler option. What does the optimiser do?
+\end{exercises}

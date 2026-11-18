@@ -1,0 +1,24 @@
+# LaTeX build files
+*.aux
+*.log
+*.toc
+*.out.ps
+*.fls
+*.fdb_latexmk
+*.idx
+*.ilg
+*.ind
+*.synctex.gz
+main.pdf
+# compiled example programs
+*.o
+*.mod
+*.exe
+*.class
+prog
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+.DS_Store

@@ -1,0 +1,270 @@
+% =====================================================================
+\phantomsection
+\addcontentsline{toc}{part}{Languages of the Web}
+\BookChapter[JavaScript and TypeScript]{JavaScript and TypeScript: The Languages of the Web}
+\label{ch:javascript}
+
+\begin{researchquestion}
+How do you turn a calculation into something a colleague can use in a web browser?
+\end{researchquestion}
+\OrientationNote
+% =====================================================================
+
+\begin{factsheet}{JavaScript}
+First appeared & 1995; standardised as ECMAScript (ES), yearly editions since ES2015\\
+Designed by & Brendan Eich, Netscape\\
+Paradigms & imperative, functional, object-oriented (prototype-based, with classes since ES2015), event-driven\\
+Typing & dynamic, weak; TypeScript adds static types\\
+Execution & JIT-compiled by the browser's engine (V8, SpiderMonkey, JavaScriptCore) or by Node.js, Deno, Bun\\
+File extensions & \file{.js}, \file{.mjs}; TypeScript \file{.ts}\\
+Used for & every interactive web page; web applications; dashboards and data visualisation;
+  servers (Node.js); desktop apps (Electron); scripting in some engineering tools\\
+Famous software & Google Maps, VS Code (TypeScript), D3.js, Plotly.js, Three.js, React,
+  Jupyter's web interface\\
+\end{factsheet}
+
+JavaScript is the only programming language that runs natively in every web browser,
+which makes it the most widely \emph{deployed} language in the world. Every time you use
+an interactive web page --- an online map, a booking form, an online simulation, your
+university's learning-management system --- JavaScript is running on your computer. For
+engineers, it is the language of web dashboards, interactive visualisations, online
+calculators and the user interfaces of many modern tools.
+
+\LearningOutcomes{Run JavaScript in a browser console and with Node.js; avoid the common surprises of loose typing; process data with array methods and JSON; build a small interactive calculator in a single web page; explain event-driven and asynchronous code; and say what TypeScript adds.}
+
+\section{History and philosophy}
+
+\begin{history}
+In May 1995 Netscape, maker of the dominant web browser, asked Brendan Eich to create a
+simple scripting language for web pages. He produced the first version in about ten days.
+It was called Mocha, then LiveScript, and finally JavaScript --- a marketing decision to
+ride on the popularity of Java, with which it has little in common. To prevent each
+browser from developing its own dialect, the language was standardised as
+\emph{ECMAScript} in 1997. In 2008 Google released the V8 engine, whose JIT compiler made
+JavaScript fast enough for large applications, and in 2009 Ryan Dahl built
+\textbf{Node.js} on V8 so that JavaScript could also run outside the browser, on servers.
+\end{history}
+
+JavaScript was designed to be forgiving: a web page should keep working even if a script
+has a small mistake. This led to features --- automatic type conversions, a special value
+\code{undefined} for missing things, functions that accept any number of arguments --- that
+make the language easy to start with but can hide errors in calculations. Modern
+JavaScript (since ES2015, ``ES6'') added \code{let}/\code{const}, arrow functions, classes,
+modules and many other improvements, and \textbf{TypeScript} adds a static type system on
+top (Section~\ref{sec:typescript}).
+
+\section{Getting started}
+
+You already have a JavaScript environment: open any web browser, press \code{F12} (or
+\code{Ctrl+Shift+I}, \code{Cmd+Option+I} on a Mac) and choose the ``Console'' tab. Type
+\code{2 + 3} and press Enter. For running scripts from files, install
+\textbf{Node.js} from \url{https://nodejs.org}:
+\codefile{JavaScript}{javascript/hello.js}{hello world}
+\begin{lstlisting}[style=shell]
+$ node hello.js
+\end{lstlisting}
+\outfile{javascript/hello.out}
+Strings in backticks are \term{template literals}: \code{\$\{\ldots\}} inserts the value of
+an expression, like an f-string in \py.
+
+\section{The language in brief}
+
+\subsection*{Declare with \texttt{const} and \texttt{let}; every number is a double}
+
+Declare variables with \code{const} (cannot be reassigned) or \code{let} (can be
+reassigned). Prefer \code{const}; avoid the old keyword \code{var}, which has confusing
+scoping rules.
+\begin{lstlisting}[language=JavaScript]
+const g = 9.81;                 // number
+let n = 0;                      // number (there is no separate integer type)
+const fluid = "water";          // string
+const ok = true;                // boolean
+let x;                          // undefined (declared, no value yet)
+const nothing = null;           // deliberately empty
+const big = 2n ** 64n;          // BigInt: arbitrary-precision integer
+typeof g;                       // "number"
+\end{lstlisting}
+All ordinary numbers are IEEE double-precision floats, so \code{7 / 2} is \code{3.5} and
+integers are exact only up to $2^{53}\approx 9\times10^{15}$. Mathematical functions live in
+the \code{Math} object (\code{Math.sqrt}, \code{Math.exp}, \code{Math.sin},
+\code{Math.PI}, \ldots) and powers can be written \code{x ** 2}.
+
+\subsection*{Control flow follows C, and functions are values}
+
+Control flow follows C: \code{if}/\code{else}, \code{for}, \code{while}, \code{switch},
+\code{break}, \code{continue}, braces and (optional, but recommended) semicolons. Use
+\code{for (const item of array)} to loop over the values of an array --- the counterpart of
+\py's \code{for item in list}.
+
+Functions can be declared in two ways:
+\begin{lstlisting}[language=JavaScript]
+function terminalVelocity(m, c, g = 9.81) {      // function declaration
+  return Math.sqrt(m * g / c);
+}
+const area = (d) => Math.PI * d ** 2 / 4;        // arrow function
+\end{lstlisting}
+Functions are values: they can be stored in variables, passed to other functions and
+returned. This makes functional programming natural in JavaScript.
+
+\subsection*{Always compare with three equals signs}
+
+JavaScript has two equality operators. \code{==} converts types before comparing
+(\code{"5" == 5} is \code{true}); \code{===} does not (\code{"5" === 5} is \code{false}).
+Always use \code{===} and \code{!==}. The automatic conversions of the \code{+} operator
+are a frequent source of bugs when numbers come from text input fields, which always
+produce strings: \code{"3" + 4} is \code{"34"}. Convert explicitly with
+\code{Number(text)} or \code{parseFloat(text)}.
+
+\subsection*{Arrays and objects carry the data; JSON carries it between programs}
+
+\codefile{JavaScript}{javascript/arrays.js}{arrays, objects and JSON}
+\outfile{javascript/arrays.out}
+Array methods such as \code{map}, \code{filter} and \code{reduce} take functions as
+arguments and are the idiomatic way to process data. An \term{object literal}
+\code{\{ name: "S275", density: 7850 \}} is JavaScript's dictionary. Its text form is
+\term{JSON} (JavaScript Object Notation), which has become the universal data-exchange
+format of the web and is read by every language in these notes.
+
+The last line of the output shows three classic surprises. \code{"3" + 4} joins strings;
+\code{"3" * 4} converts to numbers; and \code{sort()} without arguments sorts numbers
+\emph{as strings}, so \code{10} comes before \code{9}. Always pass a comparison function,
+\code{sort((a, b) => a - b)}, when sorting numbers.
+
+\section{Case study: the falling skydiver}
+
+\codefile{JavaScript}{javascript/drag.js}{Euler solution of the drag equation}
+\outfile{javascript/drag.out}
+The numbers are identical to those of all the other languages; only the exponent format of
+\code{toExponential} differs slightly. JavaScript has no \code{printf}, so we built two
+small helper functions with \code{toFixed} and \code{padStart}. \code{Float64Array} is a
+\term{typed array}: a compact block of doubles, much like a NumPy array, which the JIT
+compiler can process efficiently.
+
+\section{JavaScript in the browser}
+
+JavaScript's real home is the web page. A page consists of three layers: \textbf{HTML}
+describes the content and structure, \textbf{CSS} describes the appearance, and
+\textbf{JavaScript} provides the behaviour. Scripts read and change the page through the
+\term{Document Object Model} (DOM), and they react to \term{events} such as clicks, key
+presses and slider movements.
+
+The following file is a complete interactive engineering tool: an online calculator that
+re-runs the drag simulation and redraws the plot every time the user moves a slider. Save
+it as \file{drag.html} and open it in any browser --- no installation, no server.
+\codefile[language=HTML]{HTML}{javascript/drag.html}{an interactive web calculator}
+This \emph{event-driven} style is different from the scripts we have seen so far. The
+program does not run from top to bottom and stop; it sets up the page, registers a function
+to be called when the slider moves (\code{addEventListener}), and then waits for the user.
+Graphical user interfaces in every language (C\# Windows applications, \py's Tkinter or
+Qt, MATLAB App Designer) work the same way.
+
+\begin{engnote}[Engineering note: share a calculation as a web page]
+A single HTML file with a little JavaScript is often the easiest way to give colleagues or
+clients a calculation tool: everyone has a browser, nothing needs to be installed, and the
+file can be emailed or put on an intranet. For serious plots, use a library such as
+Plotly.js, Chart.js or D3.js instead of drawing on a canvas by hand. And remember that
+anyone can read the code of a web page --- and change it in their copy.
+\end{engnote}
+
+\subsection*{Asynchronous code keeps the page responsive while it waits}
+
+Web pages must not freeze while waiting for data from a server. JavaScript therefore uses
+\term{asynchronous} functions: a request is started, the program continues, and the result
+is handled when it arrives. Modern code uses \code{async}/\code{await}:
+\begin{lstlisting}[language=JavaScript]
+async function loadSensorData(url) {
+  const response = await fetch(url);          // wait without blocking the page
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.json();          // parse the JSON body
+  return data.readings.map((r) => r.temperature);
+}
+
+loadSensorData("https://example.com/api/plant/42/readings")
+  .then((temps) => console.log("Max temperature:", Math.max(...temps)))
+  .catch((err) => console.error("Could not load data:", err));
+\end{lstlisting}
+This pattern is how dashboards display live data from sensors, databases and simulations.
+
+\section{TypeScript}
+\label{sec:typescript}
+
+\textbf{TypeScript} (Microsoft, 2012, also designed by Anders Hejlsberg of C\# fame) is
+JavaScript with optional static types. A TypeScript compiler checks the types and then
+removes them, producing ordinary JavaScript. Most large JavaScript projects --- including
+VS Code itself --- are now written in TypeScript, because the type checker catches errors
+before the code runs.
+\begin{lstlisting}[language=TypeScript]
+interface Material {
+  name: string;
+  density: number;        // kg/m^3
+  youngsModulus: number;  // Pa
+}
+
+function specificStiffness(m: Material): number {
+  return m.youngsModulus / m.density;
+}
+
+const al: Material = { name: "Al6061", density: 2700, youngsModulus: 69e9 };
+specificStiffness(al);              // OK
+specificStiffness({ name: "x" });   // compile-time error: properties missing
+const s: number = "25";             // compile-time error: string is not a number
+\end{lstlisting}
+
+\section{Beyond the browser}
+
+\begin{itemize}
+\item \textbf{Node.js}, \textbf{Deno} and \textbf{Bun} run JavaScript and TypeScript on
+  servers and on the command line, with access to files and the network. The package
+  registry \textbf{npm} is the largest software repository in the world.
+\item \textbf{Electron} packages a web application as a desktop program; VS Code, Slack
+  and many other applications are built this way.
+\item \textbf{WebAssembly} (Wasm) lets code written in C, C++, Rust, Fortran or even \py
+  run in the browser at near-native speed, with JavaScript as the glue. This is how
+  JupyterLite and Pyodide run \py --- including NumPy --- inside a web page.
+\item JavaScript is the scripting language of some engineering and office tools, such as
+  Google Apps Script (Google Sheets), Adobe Acrobat forms and Node-RED, a visual tool for
+  wiring together Internet-of-Things devices.
+\item Visualisation libraries such as \textbf{D3.js}, \textbf{Plotly.js} and
+  \textbf{Three.js} (3D graphics) are the basis of many interactive scientific figures; the
+  \py and R versions of Plotly generate JavaScript underneath.
+\end{itemize}
+
+\section{Strengths and weaknesses}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Strengths} & \textbf{Weaknesses}\\
+\midrule
+Runs in every browser; nothing to install & Weak typing causes surprising results\\
+The only choice for interactive web pages & Only one number type (double); no built-in matrices\\
+Fast JIT engines & Small numerical/scientific ecosystem\\
+Huge ecosystem (npm) and community & Ecosystem changes very fast; dependency sprawl\\
+TypeScript adds safety for large projects & Event-driven and asynchronous style takes practice\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Further reading}
+\begin{itemize}
+\item MDN Web Docs (Mozilla), \url{https://developer.mozilla.org/en-US/docs/Web/JavaScript} ---
+  the best reference and tutorial.
+\item M.~Haverbeke, \emph{Eloquent JavaScript}, 4th ed., No Starch Press, 2024 (free online).
+\item The TypeScript Handbook, \url{https://www.typescriptlang.org/docs/}.
+\end{itemize}
+
+\begin{exercises}
+\item Open your browser's console and evaluate \code{0.1 + 0.2}, \code{"5" - 2},
+  \code{"5" + 2}, \code{[] + []}, \code{typeof NaN} and \code{[1, 2, 10].sort()}. Explain
+  each result.
+\item Open \file{drag.html} in a browser. Add a second slider for the mass and show the
+  terminal velocity as a dashed horizontal line on the plot.
+\item Write a JavaScript function that converts a temperature in Celsius to Fahrenheit and
+  kelvin, and use \code{map} to apply it to an array of temperatures.
+\item Use \code{reduce} to compute the mean and the standard deviation of an array of
+  numbers in a single pass (hint: accumulate $\sum x$ and $\sum x^2$). Is this one-pass
+  formula numerically safe? (Recall Section~\ref{sec:floatingpoint}.)
+\item Rewrite the \code{Material} interface example in plain JavaScript. Which errors that
+  TypeScript catches would now go unnoticed until run time?
+\end{exercises}

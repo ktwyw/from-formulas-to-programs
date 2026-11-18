@@ -1,0 +1,216 @@
+% =====================================================================
+\BookChapter[Java]{Java: Write Once, Run Anywhere}
+\label{ch:java}
+
+\begin{researchquestion}
+How can the same compiled program run on any computer, and where does an engineer meet such programs?
+\end{researchquestion}
+\OrientationNote
+% =====================================================================
+
+\begin{factsheet}{Java}
+First appeared & 1995; long-term-support releases Java 8, 11, 17, 21, 25\\
+Designed by & James Gosling and team, Sun Microsystems (now owned by Oracle)\\
+Paradigms & object-oriented, generic, functional elements (lambdas, streams)\\
+Typing & static, strong\\
+Execution & compiled to bytecode, run and JIT-compiled by the Java Virtual Machine (JVM)\\
+File extensions & \file{.java} (source), \file{.class} (bytecode), \file{.jar} (archive)\\
+Implementations & OpenJDK (free) and builds of it: Eclipse Temurin, Oracle, Amazon Corretto, \ldots\\
+Used for & enterprise and banking systems, Android apps, large web back ends, big-data
+  tools, scientific desktop tools, smart cards, education\\
+Famous software & Android apps, Minecraft, Apache Hadoop/Spark/Kafka, ImageJ (image
+  analysis), MATSim (traffic simulation), JMol, IntelliJ IDEA, Ghidra\\
+\end{factsheet}
+
+Java is one of the most widely used programming languages in the world. Its promise,
+``write once, run anywhere'', means that the same compiled program runs on any computer
+with a Java Virtual Machine. Java dominates large business software and Android apps. In
+engineering and science it is less common than \py, C++ or MATLAB, but you will meet it in
+data-processing infrastructure, in some simulation and image-analysis tools, and in the
+first-year programming courses of many universities.
+
+\LearningOutcomes{Compile and run a Java program on the Java Virtual Machine; read Java classes, interfaces and records; follow a calculation written with streams; and say where Java is used in engineering and where it is not.}
+
+\section{History and philosophy}
+
+\begin{history}
+In 1991 a small team at Sun Microsystems led by James Gosling started a project to
+program consumer electronics such as set-top boxes. Because these devices used many
+different processors, they designed a language that compiled to bytecode for a virtual
+machine rather than to the machine code of one processor. The language, first called Oak,
+was renamed Java (after the coffee) and released in 1995, just as the World Wide Web took
+off: Java ``applets'' could run inside web pages on any computer. Applets are long gone,
+but the virtual-machine idea conquered servers, and from 2008 Java became the main language
+of Android phones.
+\end{history}
+
+Java was designed as a simpler and safer C++: no pointers that can be manipulated, no
+manual memory management (a garbage collector frees unused objects), array bounds always
+checked, and no multiple inheritance of classes. Everything is organised in classes. The
+language changed slowly for many years, but since 2017 new versions appear every six
+months, and modern Java has records, type inference (\code{var}), lambdas, pattern
+matching and text blocks.
+
+\section{Getting started}
+
+Install a Java Development Kit (JDK), for example Eclipse Temurin from
+\url{https://adoptium.net}. IntelliJ IDEA, Eclipse and VS Code are common editors.
+\codefile{Java}{java/Hello.java}{hello world}
+\begin{lstlisting}[style=shell]
+$ javac Hello.java      # compile: creates Hello.class (bytecode)
+$ java Hello            # run it on the JVM
+$ java Hello.java       # Java 11+: compile and run a single file in one step
+\end{lstlisting}
+\outfile{java/Hello.out}
+Every Java program needs a class (here \code{Hello}, which must be in a file called
+\file{Hello.java}) with a method \code{public static void main(String[] args)}. Each word
+has a meaning: \code{public} (callable from outside), \code{static} (belongs to the class,
+no object needed), \code{void} (returns nothing), and \code{String[] args} (the
+command-line arguments). Recent Java versions (Java 25) also allow a much shorter form for
+small programs, \code{void main() \{ IO.println("Hello"); \}}, to make the language easier
+for beginners.
+
+\section{The language in brief}
+
+Java's syntax is C syntax. Primitive types are \code{int} (32 bits), \code{long} (64
+bits), \code{double}, \code{float}, \code{boolean}, \code{char}; their sizes are the same
+on every platform. Everything else is an \term{object}, accessed through a
+\term{reference}.
+\begin{lstlisting}[language=Java]
+int n = 40;
+double rho = 998.0;
+var mu = 1.0e-3;                         // type inferred: double
+String fluid = "water";                  // String is a class
+double[] T = {293.1, 305.6, 299.4};      // array, fixed size
+T.length;                                // 3 (a field, not a method)
+
+import java.util.*;
+List<Double> loads = new ArrayList<>(List.of(12.6, 14.0));   // growable list
+loads.add(13.2);
+Map<String, Double> density = new HashMap<>();
+density.put("steel", 7850.0);
+double r = density.get("steel");
+
+for (double x : T) {                     // enhanced for loop
+    System.out.println(x - 273.15);
+}
+\end{lstlisting}
+Collections such as \code{List} and \code{Map} hold objects, not primitives, so a list of
+numbers is a \code{List<Double>} (with a capital D, the \term{wrapper class}), and Java
+converts between \code{double} and \code{Double} automatically (``autoboxing''). Strings
+are compared with \code{s.equals(t)}, \emph{not} with \code{==}, which compares references.
+
+Mathematical functions are static methods of \code{Math}: \code{Math.sqrt},
+\code{Math.pow}, \code{Math.exp}, \code{Math.log}, \code{Math.sin}, \code{Math.PI}.
+Formatted output uses \code{System.out.printf} with C-style format specifiers and \code{\%n}
+for a platform-independent newline. Errors are reported with exceptions; Java
+distinguishes \emph{checked} exceptions (such as \code{IOException}), which a method must
+either catch or declare with \code{throws}, from unchecked ones (such as
+\code{ArithmeticException}).
+
+\section{Case study: the falling skydiver}
+
+\codefile{Java}{java/Drag.java}{Euler solution of the drag equation}
+\outfile{java/Drag.out}
+This is almost identical to the C\# version. Constants are declared \code{static final}
+and, by convention, written in upper case. Java arrays are automatically filled with zeros
+when created.
+
+\section{Object-oriented design with interfaces}
+
+An \term{interface} lists methods that a class promises to provide, without saying how.
+Any class that \code{implements} the interface can be used wherever the interface is
+expected. The example below computes the heat loss through a composite wall, a classic
+heat-transfer problem. Heat flows through a series of thermal resistances: convection at
+the inner surface, conduction through each layer ($R = L/(kA)$), and convection at the
+outer surface ($R = 1/(hA)$). The total resistance is the sum, and the heat flow is
+$\dot Q = \Delta T / R_\mathrm{total}$.
+\codefile{Java}{java/Thermal.java}{interfaces and records: a composite wall}
+\outfile{java/Thermal.out}
+The \code{record} keyword (Java 16+) defines a class whose fields are fixed at creation,
+and generates the constructor and accessor methods automatically. Both record types
+implement \code{ThermalResistance}, so the loop treats them uniformly. The output shows a
+typical engineering insight: the 10~cm insulation layer contributes 84\% of the total
+resistance, so it dominates the heat loss.
+
+\section{Streams}
+
+Java's \term{Stream API} (Java 8+) processes collections as pipelines of operations,
+similar to C\#'s LINQ and to chained pandas operations:
+\codefile{Java}{java/Streams.java}{statistics with streams}
+\outfile{java/Streams.out}
+The notation \code{Double::parseDouble} is a \term{method reference}, a short way of
+writing the lambda \code{s -> Double.parseDouble(s)}.
+
+\section{The JVM family and engineering uses}
+
+The JVM runs several other languages that can use all Java libraries:
+\textbf{Kotlin} (now Google's preferred language for Android, with a more concise
+syntax), \textbf{Scala} (functional and object-oriented, used in big data through Apache
+Spark), \textbf{Groovy} (scripting; used by the Gradle build tool) and \textbf{Clojure} (a
+Lisp).
+
+In engineering contexts you may meet Java in:
+\begin{itemize}
+\item \textbf{image analysis}: ImageJ and Fiji, widely used for microscopy and materials
+  characterisation, are written in Java and extended with Java plug-ins (or macros, \py and
+  other scripting languages);
+\item \textbf{data pipelines}: Hadoop, Spark and Kafka process the large data streams of
+  sensor networks and digital twins;
+\item \textbf{simulation tools}: agent-based and traffic simulators (MATSim, AnyLogic),
+  discrete-event simulation, and some optimisation libraries;
+\item \textbf{mobile apps} for field data collection on Android;
+\item \textbf{industrial software}: many enterprise systems (maintenance management,
+  manufacturing execution systems) have Java back ends.
+\end{itemize}
+For numerical work, libraries such as Apache Commons Math, EJML and ojAlgo provide linear
+algebra and statistics, but the ecosystem is much smaller than \py's.
+
+\section{Strengths and weaknesses}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Strengths} & \textbf{Weaknesses}\\
+\midrule
+Portable bytecode: runs anywhere with a JVM & Verbose; much ``boilerplate'' code\\
+Memory safe, garbage collected & JVM start-up time and memory use\\
+Fast after JIT warm-up & No operator overloading: matrix code is clumsy (\code{a.add(b.multiply(c))})\\
+Huge, stable ecosystem; excellent tools & Small scientific-computing community\\
+Very large job market & Not suited to embedded real-time control\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{pitfall}[Common pitfall: Java is not JavaScript]
+Despite the name, Java and JavaScript (next chapter) are completely different languages.
+JavaScript was given its name in 1995 for marketing reasons, when Java was fashionable.
+As programmers like to say, ``Java is to JavaScript as car is to carpet''.
+\end{pitfall}
+
+\section{Further reading}
+\begin{itemize}
+\item The official Java tutorials, \url{https://dev.java/learn/}.
+\item C.~Horstmann, \emph{Core Java}, 13th ed., Oracle Press, 2024.
+\item J.~Bloch, \emph{Effective Java}, 3rd ed., Addison-Wesley, 2018.
+\item R.~Sedgewick and K.~Wayne, \emph{Computer Science: An Interdisciplinary Approach},
+  Addison-Wesley, 2016 --- a first course that uses Java and scientific examples.
+\end{itemize}
+
+\begin{exercises}
+\item Run \file{Drag.java} with \code{java Drag.java}. Then add a command-line argument for
+  the time step and print the maximum error for $\Delta t = 0.5$, $0.25$ and $0.125$.
+\item In \file{Thermal.java}, how thick must the insulation be to reduce the heat loss to
+  50~W? Find the answer by trial in the program, then check it by hand.
+\item Add a \code{Radiation} record to \file{Thermal.java} with a linearised radiative
+  resistance $R = 1/(h_r A)$, where $h_r = 4\varepsilon\sigma T_m^3$. Use the
+  Stefan--Boltzmann constant $\sigma = 5.67\times10^{-8}\unit{W/(m^2\,K^4)}$ and an
+  emissivity of $\varepsilon = 0.9$, a typical value for building surfaces. The mean
+  temperature $T_m$ must be in kelvin, not in degrees Celsius, before you cube it.
+\enlargethispage{3\baselineskip}
+\item Explain the difference between \code{int} and \code{Integer} in Java. Why can you
+  not write \code{List<int>}?
+\item Write a Java program that prints the multiplication table up to $10\times10$, nicely
+  aligned with \code{printf}.
+\end{exercises}

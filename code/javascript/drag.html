@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Falling skydiver</title>
+</head>
+<body>
+  <h1>Falling skydiver with air drag</h1>
+  <label>Drag coefficient c (kg/m):
+    <input id="c" type="range" min="0.05" max="1.0" step="0.05" value="0.25">
+    <span id="cval">0.25</span>
+  </label>
+  <p id="result"></p>
+  <canvas id="plot" width="600" height="300" style="border:1px solid #888"></canvas>
+
+  <script>
+    const m = 80.0, g = 9.81, dt = 0.5, tEnd = 20.0;
+
+    function simulate(c) {
+      const v = [0.0];
+      for (let n = 0; n < tEnd / dt; n++) {
+        const vn = v[v.length - 1];
+        v.push(vn + dt * (g - (c / m) * vn * vn));
+      }
+      return v;
+    }
+
+    function draw() {
+      const c = parseFloat(document.getElementById("c").value);
+      document.getElementById("cval").textContent = c.toFixed(2);
+      const v = simulate(c);
+      const vt = Math.sqrt(m * g / c);
+      document.getElementById("result").textContent =
+        `Terminal velocity: ${vt.toFixed(1)} m/s, speed after 20 s: ${v.at(-1).toFixed(1)} m/s`;
+
+      const canvas = document.getElementById("plot");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const sx = canvas.width / tEnd, sy = canvas.height / 130;   // pixels per unit
+      ctx.beginPath();
+      v.forEach((vn, n) => {
+        const x = n * dt * sx, y = canvas.height - vn * sy;
+        n === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = "#003d79";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    document.getElementById("c").addEventListener("input", draw);  // react to the slider
+    draw();
+  </script>
+</body>
+</html>

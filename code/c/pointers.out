@@ -1,0 +1,4 @@
+after swap: p = 2.5, q = 1.5
+n = 5, mean load = 13.50 kN
+loads[2] = 13.2 = *(ptr + 2) = 13.2
+address of loads[0]: 0x7ffec8732e40, of loads[1]: 0x7ffec8732e48

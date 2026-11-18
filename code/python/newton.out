@@ -1,0 +1,7 @@
+  iteration 1: x = 2.100000000000000, |step| = 1.00e-01
+  iteration 2: x = 2.094568121104185, |step| = 5.43e-03
+  iteration 3: x = 2.094551481698199, |step| = 1.66e-05
+  iteration 4: x = 2.094551481542327, |step| = 1.56e-10
+  iteration 5: x = 2.094551481542327, |step| = 7.96e-17
+Root: 2.094551481542327 after 5 iterations
+Check: f(root) = -8.88e-16

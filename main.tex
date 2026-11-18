@@ -1,0 +1,39 @@
+% !TeX program = pdflatex
+% ENG 101 Programming for Engineers: From Formulas to Programs
+% Compile with:  latexmk -pdf main.tex
+\documentclass[12pt,a4paper,oneside,openany]{book}
+\input{metadata}
+\input{booksetup}
+\input{codebook}
+\begin{document}
+\frontmatter
+\hypersetup{pageanchor=false}
+\input{frontmatter/titlepage}
+\hypersetup{pageanchor=true}
+\input{frontmatter/intro}
+{\setlength{\parskip}{0pt}\tableofcontents}
+\mainmatter
+\include{chapters/01-introduction}
+\include{chapters/02-how-code-runs}
+\include{chapters/03-python}
+\include{chapters/04-fortran}
+\include{chapters/05-c}
+\include{chapters/06-cpp}
+\include{chapters/07-csharp}
+\include{chapters/08-java}
+\include{chapters/09-javascript}
+\include{chapters/10-matlab}
+\include{chapters/11-wolfram}
+\include{chapters/12-r}
+\include{chapters/13-julia}
+\include{chapters/14-others}
+\include{chapters/15-rosetta}
+\include{chapters/16-choosing}
+\input{backmatter/epilogue}
+\backmatter
+\input{backmatter/guides}
+\input{backmatter/answers}
+\clearpage\phantomsection\addcontentsline{toc}{chapter}{Subject Index}
+\renewcommand{\indexname}{Subject Index}
+\begingroup\small\printindex\endgroup
+\end{document}
